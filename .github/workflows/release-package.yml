@@ -24,6 +24,7 @@ jobs:
           - [ubuntu-latest, musllinux_x86_64, ""]
 
           # the macos-14 runner uses an Apple silicon chip, while the macos-13 runner uses an Intel chip
+          - [macos-12, macosx_x86_64, ""]
           - [macos-13, macosx_x86_64, ""]
           - [macos-14, macosx_arm64, accelerate]
           - [macos-15, macosx_arm64, accelerate]
