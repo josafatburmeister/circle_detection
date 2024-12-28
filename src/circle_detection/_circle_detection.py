@@ -166,6 +166,8 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
     Args:
         xy: Coordinates of the set of 2D points in which to detect circles.
         bandwidth: Kernel bandwidth.
+        batch_indices: Indices indicating to which input point set each point in the batch belongs. If set to
+            :code:`None` it is assumed that all input points belong to the same point set. Defaults to :code:`None`.
         min_start_x: Lower limit of the start values for the x-coordinates of the circle centers. Defaults to
             :code:`None`. If set to :code:`None`, the minimum of the x-coordinates in :code:`xy` is used as the default.
         max_start_x: Upper limit of the start values for the x-coordinates of the circle centers. Defaults to
