@@ -170,7 +170,7 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
         xy: Coordinates of the set of 2D points in which to detect circles.
         bandwidth: Kernel bandwidth.
         batch_indices: Indices indicating to which input point set each point in the batch belongs. If set to
-            :code:`None` it is assumed that all input points belong to the same point set. Defaults to :code:`None`.
+            :code:`None`, it is assumed that all input points belong to the same point set. Defaults to :code:`None`.
         min_start_x: Lower limit of the start values for the x-coordinates of the circle centers. Defaults to
             :code:`None`. If set to :code:`None`, the minimum of the x-coordinates in :code:`xy` is used as the default.
         max_start_x: Upper limit of the start values for the x-coordinates of the circle centers. Defaults to
@@ -236,23 +236,25 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
 
     Returns:
         : Tuple of two lists of arrays if :code:`batch_indices` is not :code:`None`, and tuple of two arrays otherwise.
-        In the first case, both lists contain one array per batch item. The arrays in the first tuple element contain
-        the parameters of the detected circles (in the following order: x-coordinate of the center, y-coordinate
-        of the center, radius). The arrays in the second tuple element contain the fitting losses of the detected
-        circles (lower means better).
+        In the first case, both lists contain one array per batch item. The arrays in the first list
+        (if :code:`batch_indices` is not :code:`None`) / the first array (if :code:`batch_indices` is :code:`None`)
+        contain the parameters of the detected circles (in the following order: x-coordinate of the center, y-coordinate
+        of the center, radius). The arrays in the second list (if :code:`batch_indices` is not :code:`None`) / the
+        second array (if :code:`batch_indices` is :code:`None`) contain the fitting losses of the detected circles
+        (lower means better).
 
     Raises:
-        ValueError: if :code:`min_start_x` is larger than :code:`max_start_x`.
-        ValueError: if :code:`min_start_x` is smaller than :code:`break_min_x`.
-        ValueError: if :code:`max_start_x` is smaller than :code:`break_max_x`.
+        ValueError: if :code:`min_start_x` is larger than :code:`max_start_x` for any batch item.
+        ValueError: if :code:`min_start_x` is smaller than :code:`break_min_x` for any batch item.
+        ValueError: if :code:`max_start_x` is smaller than :code:`break_max_x` for any batch item.
 
-        ValueError: if :code:`min_start_y` is larger than :code:`max_start_y`.
-        ValueError: if :code:`min_start_y` is smaller than :code:`break_min_y`.
-        ValueError: if :code:`max_start_y` is smaller than :code:`break_max_y`.
+        ValueError: if :code:`min_start_y` is larger than :code:`max_start_y` for any batch item.
+        ValueError: if :code:`min_start_y` is smaller than :code:`break_min_y` for any batch item.
+        ValueError: if :code:`max_start_y` is smaller than :code:`break_max_y` for any batch item.
 
-        ValueError: if :code:`min_start_radius` is larger than :code:`max_start_radius`.
-        ValueError: if :code:`min_start_radius` is smaller than :code:`break_min_radius`.
-        ValueError: if :code:`max_start_radius` is larger than :code:`break_max_radius`.
+        ValueError: if :code:`min_start_radius` is larger than :code:`max_start_radius` for any batch item.
+        ValueError: if :code:`min_start_radius` is smaller than :code:`break_min_radius` for any batch item.
+        ValueError: if :code:`max_start_radius` is larger than :code:`break_max_radius` for any batch item.
 
         ValueError: if :code:`n_start_x` is not a positive number.
         ValueError: if :code:`n_start_y` is not a positive number.
@@ -264,7 +266,7 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
 
     Shape:
         - :code:`xy`: :math:`(N, 2)`
-        - :code:`batch_indices`: list of length :math:`(B)` where each list element is an array of length :math:`N_i`
+        - :code:`batch_indices`: list of length :math:`B` where each list element is an array of shape :math:`(N_i)`
         - :code:`min_start_x`: scalar or array of shape :math:`(B)`
         - :code:`max_start_x`: scalar or array of shape :math:`(B)`
         - :code:`max_start_y`: scalar or array of shape :math:`(B)`
@@ -277,10 +279,10 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
         - :code:`break_max_y`: scalar or array of shape :math:`(B)`
         - :code:`break_min_radius`: scalar or array of shape :math:`(B)`
         - :code:`break_max_radius`: scalar or array of shape :math:`(B)`
-        - Output: If :code:`batch_indices` is not :code:`None`, two lists of length :math:`(B)` are returned. In the
+        - Output: If :code:`batch_indices` is not :code:`None`, two lists of length :math:`B` are returned. In the
           first list, each element is an array of shape :math:`(C_i, 3)`, and in the second list each element is an
           array of shape :math:`(C_i)`. If :code:`batch_indices` is :code:`None`, the output is an tuple of two arrays,
-          where the first array has shape :code:`(C, 3)` and the second array has shape :math:`(C)`.
+          where the first array has shape :math:`(C, 3)` and the second array has shape :math:`(C)`.
 
         | where
         |
