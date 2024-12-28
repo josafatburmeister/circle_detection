@@ -2,7 +2,7 @@
 
 __all__ = ["detect_circles"]
 
-from typing import Optional, Tuple
+from typing import List, Optional, Tuple, Union, cast
 import numpy as np
 import numpy.typing as npt
 
@@ -15,21 +15,22 @@ from ._circle_detection_cpp import (  # type: ignore[import-not-found] # pylint:
 def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-locals, too-many-branches, too-many-statements
     xy: npt.NDArray[np.float64],
     bandwidth: float,
-    min_start_x: Optional[float] = None,
-    max_start_x: Optional[float] = None,
+    batch_indices: Optional[List[List[int]]] = None,
+    min_start_x: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    max_start_x: Optional[Union[float, npt.NDArray[np.float64]]] = None,
     n_start_x: int = 10,
-    min_start_y: Optional[float] = None,
-    max_start_y: Optional[float] = None,
+    min_start_y: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    max_start_y: Optional[Union[float, npt.NDArray[np.float64]]] = None,
     n_start_y: int = 10,
-    min_start_radius: Optional[float] = None,
-    max_start_radius: Optional[float] = None,
+    min_start_radius: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    max_start_radius: Optional[Union[float, npt.NDArray[np.float64]]] = None,
     n_start_radius: int = 10,
-    break_min_x: Optional[float] = None,
-    break_max_x: Optional[float] = None,
-    break_min_y: Optional[float] = None,
-    break_max_y: Optional[float] = None,
-    break_min_radius: Optional[float] = None,
-    break_max_radius: Optional[float] = None,
+    break_min_x: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    break_max_x: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    break_min_y: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    break_max_y: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    break_min_radius: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    break_max_radius: Optional[Union[float, npt.NDArray[np.float64]]] = None,
     break_min_change: float = 1e-5,
     max_iterations: int = 1000,
     acceleration_factor: float = 1.6,
@@ -40,7 +41,7 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
     max_circles: Optional[int] = None,
     min_fitting_score: float = 1e-6,
     non_maximum_suppression: bool = True,
-) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+) -> Tuple[List[npt.NDArray[np.float64]], List[npt.NDArray[np.float64]]]:
     r"""
     Detects circles in a set of 2D points using the M-estimator method proposed in `Garlipp, Tim, and Christine
     H. Müller. "Detection of Linear and Circular Shapes in Image Analysis." Computational Statistics & Data Analysis
@@ -229,9 +230,10 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
             loss among the circles with which they overlap. Defaults to :code:`True`.
 
     Returns:
-        : Tuple of two arrays. The first array contains the parameters of the detected circles (in the following order:
-        x-coordinate of the center, y-coordinate of the center, radius). The second array contains the fitting losses of
-        the detected circles (lower means better).
+        : Tuple of two lists of arrays. Both lists contain one array per batch item. The arrays in the first list
+        contain the parameters of the detected circles (in the following order: x-coordinate of the center, y-coordinate
+        of the center, radius). The arrays in the second list contain the fitting losses of the detected circles (lower
+        means better).
 
     Raises:
         ValueError: if :code:`min_start_x` is larger than :code:`max_start_x`.
@@ -256,63 +258,136 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
 
     Shape:
         - :code:`xy`: :math:`(N, 2)`
-        - Output: The first array in the output tuple has shape :math:`(C, 3)` and the second shape :math:`(C)`.
+        - :code:`batch_indices`: list of length :math:`(B)` where each list element is an array of length :math:`N_i`
+        - :code:`min_start_x`: scalar or array of shape :math:`(B)`
+        - :code:`max_start_x`: scalar or array of shape :math:`(B)`
+        - :code:`max_start_y`: scalar or array of shape :math:`(B)`
+        - :code:`max_start_y`: scalar or array of shape :math:`(B)`
+        - :code:`min_start_radius`: scalar or array of shape :math:`(B)`
+        - :code:`max_start_radius`: scalar or array of shape :math:`(B)`
+        - :code:`break_min_x`: scalar or array of shape :math:`(B)`
+        - :code:`break_max_x`: scalar or array of shape :math:`(B)`
+        - :code:`break_min_y`: scalar or array of shape :math:`(B)`
+        - :code:`break_max_y`: scalar or array of shape :math:`(B)`
+        - :code:`break_min_radius`: scalar or array of shape :math:`(B)`
+        - :code:`break_max_radius`: scalar or array of shape :math:`(B)`
+        - Output: Both lists have lengtzb :math:`(B)`. In the first list, each element is an array of shape
+          :math:`(C_i, 3)`, and in the second list each element is an array of shape :math:`(C_i)`.
 
         | where
         |
+        | :math:`B = \text{ batch size}`
         | :math:`N = \text{ number of points}`
+        | :math:`N_i = \text{ number of points belonging to the i-th batch item}`
         | :math:`C = \text{ number of detected circles}`
+        | :math:`C_i = \text{ number of circles detected for the i-th batch item}`
     """
+    if batch_indices is None:
+        batch_indices = [np.arange(len(xy), dtype=np.int64).tolist()]
+    num_batches = len(batch_indices)
+
+    if num_batches == 0:
+        raise ValueError("The list of batch indices is empty.")
 
     if min_start_x is None:
-        min_start_x = xy[:, 0].min()
+        min_start_x = np.array([xy[indices, 0].min() if len(indices) else 0 for indices in batch_indices])
+    elif not isinstance(min_start_x, np.ndarray):
+        min_start_x = np.full(num_batches, fill_value=min_start_x, dtype=xy.dtype)
+    min_start_x = cast(npt.NDArray[np.float64], min_start_x)
+
     if max_start_x is None:
-        max_start_x = xy[:, 0].max()
+        max_start_x = np.array([xy[indices, 0].max() if len(indices) else 1 for indices in batch_indices])
+    elif not isinstance(max_start_x, np.ndarray):
+        max_start_x = np.full(num_batches, fill_value=max_start_x, dtype=xy.dtype)
+    max_start_x = cast(npt.NDArray[np.float64], max_start_x)
+
     if break_min_x is None:
         break_min_x = min_start_x
+    elif not isinstance(break_min_x, np.ndarray):
+        break_min_x = np.full(num_batches, fill_value=break_min_x, dtype=xy.dtype)
+    break_min_x = cast(npt.NDArray[np.float64], break_min_x)
+
     if break_max_x is None:
         break_max_x = max_start_x
+    elif not isinstance(break_max_x, np.ndarray):
+        break_max_x = np.full(num_batches, fill_value=break_max_x, dtype=xy.dtype)
+    break_max_x = cast(npt.NDArray[np.float64], break_max_x)
 
-    if min_start_x > max_start_x:
+    if (min_start_x > max_start_x).any():
         raise ValueError("min_start_x must be smaller than or equal to max_start_x.")
-    if min_start_x < break_min_x:
+    if (min_start_x < break_min_x).any():
         raise ValueError("min_start_x must be larger than or equal to min_break_x.")
-    if max_start_x > break_max_x:
+    if (max_start_x > break_max_x).any():
         raise ValueError("max_start_x must be smaller than or equal to break_max_x.")
 
     if min_start_y is None:
-        min_start_y = xy[:, 1].min()
+        min_start_y = np.array([xy[indices, 1].min() if len(indices) else 0 for indices in batch_indices])
+    elif not isinstance(min_start_y, np.ndarray):
+        min_start_y = np.full(num_batches, fill_value=min_start_y, dtype=xy.dtype)
+    min_start_y = cast(npt.NDArray[np.float64], min_start_y)
+
     if max_start_y is None:
-        max_start_y = xy[:, 1].max()
-    if break_min_y is None:
+        max_start_y = np.array([xy[indices, 1].max() if len(indices) else 0 for indices in batch_indices])
+    elif not isinstance(max_start_y, np.ndarray):
+        max_start_y = np.full(num_batches, fill_value=max_start_y, dtype=xy.dtype)
+    max_start_y = cast(npt.NDArray[np.float64], max_start_y)
+
+    if break_max_y is None:
         break_min_y = min_start_y
+    elif not isinstance(break_max_y, np.ndarray):
+        break_min_y = np.full(num_batches, fill_value=break_min_y, dtype=xy.dtype)
+    break_min_y = cast(npt.NDArray[np.float64], break_min_y)
+
     if break_max_y is None:
         break_max_y = max_start_y
+    elif not isinstance(break_max_y, np.ndarray):
+        break_max_y = np.full(num_batches, fill_value=break_max_y, dtype=xy.dtype)
+    break_max_y = cast(npt.NDArray[np.float64], break_max_y)
 
-    if min_start_y > max_start_y:
+    if (min_start_y > max_start_y).any():
         raise ValueError("min_start_y must be smaller than or equal to max_start_y.")
-    if min_start_y < break_min_y:
+    if (min_start_y < break_min_y).any():
         raise ValueError("min_start_y must be larger than or equal to min_break_y.")
-    if max_start_y > break_max_y:
+    if (max_start_y > break_max_y).any():
         raise ValueError("max_start_y must be smaller than or equal to break_max_y.")
 
     if max_start_radius is None:
-        max_start_radius = (xy.max(axis=0) - xy.min(axis=0)).max()
+        max_start_radius = np.array(
+            [
+                (xy[indices].max(axis=0) - xy[indices].min(axis=0)).max() if len(indices) else 0.1
+                for indices in batch_indices
+            ]
+        )
+    elif not isinstance(max_start_radius, np.ndarray):
+        max_start_radius = np.full(num_batches, fill_value=max_start_radius, dtype=xy.dtype)
+    max_start_radius = cast(npt.NDArray[np.float64], max_start_radius)
+
     if min_start_radius is None:
-        min_start_radius = 0.1 * max_start_radius
+        min_start_radius = 0.1 * max_start_radius  # type: ignore[assignment]
+    elif not isinstance(min_start_radius, np.ndarray):
+        min_start_radius = np.full(num_batches, fill_value=min_start_radius, dtype=xy.dtype)
+    min_start_radius = cast(npt.NDArray[np.float64], min_start_radius)
+
     if break_min_radius is None:
         break_min_radius = min_start_radius
+    elif not isinstance(break_min_radius, np.ndarray):
+        break_min_radius = np.full(num_batches, fill_value=break_min_radius, dtype=xy.dtype)
+    break_min_radius = cast(npt.NDArray[np.float64], break_min_radius)
+
     if break_max_radius is None:
         break_max_radius = max_start_radius
+    elif not isinstance(break_max_radius, np.ndarray):
+        break_max_radius = np.full(num_batches, fill_value=break_max_radius, dtype=xy.dtype)
+    break_max_radius = cast(npt.NDArray[np.float64], break_max_radius)
 
-    if min_start_radius < 0:
+    if (min_start_radius < 0).any():
         raise ValueError("min_start_radius must be larger than zero.")
 
-    if min_start_radius > max_start_radius:
+    if (min_start_radius > max_start_radius).any():
         raise ValueError("min_start_radius must be smaller than or equal to max_start_radius.")
-    if min_start_radius < break_min_radius:
+    if (min_start_radius < break_min_radius).any():
         raise ValueError("min_start_radius must be larger than or equal to break_min_radius.")
-    if max_start_radius > break_max_radius:
+    if (max_start_radius > break_max_radius).any():
         raise ValueError("max_start_radius must be smaller than or equal to break_max_radius.")
 
     if n_start_x <= 0:
@@ -332,26 +407,27 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
     if deduplication_precision < 0:
         raise ValueError("deduplication_precision must be a positive number.")
 
-    break_min_radius = max(break_min_radius, 0)
+    break_min_radius = np.maximum(break_min_radius, 0)
 
     result = detect_circles_cpp(
         xy,
+        batch_indices,
         float(bandwidth),
-        float(min_start_x),
-        float(max_start_x),
+        min_start_x,
+        max_start_x,
         int(n_start_x),
-        float(min_start_y),
-        float(max_start_y),
+        min_start_y,
+        max_start_y,
         int(n_start_y),
-        float(min_start_radius),
-        float(max_start_radius),
+        min_start_radius,
+        max_start_radius,
         int(n_start_radius),
-        float(break_min_x),
-        float(break_max_x),
-        float(break_min_y),
-        float(break_max_y),
-        float(break_min_radius),
-        float(break_max_radius),
+        break_min_x,
+        break_max_x,
+        break_min_y,
+        break_max_y,
+        break_min_radius,
+        break_max_radius,
         float(break_min_change),
         int(max_iterations),
         float(acceleration_factor),
@@ -363,18 +439,21 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
 
     detected_circles, fitting_losses = result
 
-    detected_circles = np.round(detected_circles, decimals=deduplication_precision)
-    detected_circles, kept_indices = np.unique(detected_circles, return_index=True, axis=0)
-    fitting_losses = fitting_losses[kept_indices]
+    for batch_idx in range(num_batches):
+        detected_circles[batch_idx] = np.round(detected_circles[batch_idx], decimals=deduplication_precision)
+        detected_circles[batch_idx], kept_indices = np.unique(detected_circles[batch_idx], return_index=True, axis=0)
+        fitting_losses[batch_idx] = fitting_losses[batch_idx][kept_indices]
 
-    if non_maximum_suppression and (max_circles is None or max_circles > 1):
-        detected_circles, fitting_losses = non_maximum_suppression_op(detected_circles, fitting_losses)
+        if non_maximum_suppression and (max_circles is None or max_circles > 1):
+            detected_circles[batch_idx], fitting_losses[batch_idx] = non_maximum_suppression_op(
+                detected_circles[batch_idx], fitting_losses[batch_idx]
+            )
 
-    if max_circles is not None:
-        sorting_indices = np.argsort(fitting_losses)
-        detected_circles = detected_circles[sorting_indices]
-        fitting_losses = fitting_losses[sorting_indices]
-        detected_circles = detected_circles[:max_circles]
-        fitting_losses = fitting_losses[:max_circles]
+        if max_circles is not None:
+            sorting_indices = np.argsort(fitting_losses[batch_idx])
+            detected_circles[batch_idx] = detected_circles[batch_idx][sorting_indices]
+            fitting_losses[batch_idx] = fitting_losses[batch_idx][sorting_indices]
+            detected_circles[batch_idx] = detected_circles[batch_idx][:max_circles]
+            fitting_losses[batch_idx] = fitting_losses[batch_idx][:max_circles]
 
     return detected_circles, fitting_losses
