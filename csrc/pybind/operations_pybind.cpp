@@ -2,7 +2,7 @@
 #include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 
-#include "CircleDetection/operations/non_maximum_suppression.h"
+#include "CircleDetection/operations.h"
 
 PYBIND11_MODULE(_operations_cpp,
                 m)  // NOLINT(readability-named-parameter,hicpp-named-parameter,misc-use-internal-linkage)

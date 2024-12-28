@@ -91,7 +91,8 @@ if(BUILD_PYTHON_BINDINGS)
   pybind11_add_module(_circle_detection_cpp MODULE csrc/pybind/circle_detection_pybind.cpp)
   target_link_libraries(_circle_detection_cpp PUBLIC OpenMP::OpenMP_CXX)
 
-  pybind11_add_module(_operations_cpp MODULE csrc/pybind/operations/operations_pybind.cpp)
+  pybind11_add_module(_operations_cpp MODULE csrc/pybind/operations_pybind.cpp)
+  target_link_libraries(_operations_cpp PUBLIC OpenMP::OpenMP_CXX)
 
   install(TARGETS _circle_detection_cpp DESTINATION "${SKBUILD_PROJECT_NAME}")
   install(TARGETS _operations_cpp DESTINATION "${SKBUILD_PROJECT_NAME}/operations")
