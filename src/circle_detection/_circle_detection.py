@@ -41,7 +41,10 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
     max_circles: Optional[int] = None,
     min_fitting_score: float = 1e-6,
     non_maximum_suppression: bool = True,
-) -> Tuple[List[npt.NDArray[np.float64]], List[npt.NDArray[np.float64]]]:
+) -> Union[
+    Tuple[List[npt.NDArray[np.float64]], List[npt.NDArray[np.float64]]],
+    Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]],
+]:
     r"""
     Detects circles in a set of 2D points using the M-estimator method proposed in `Garlipp, Tim, and Christine
     H. Müller. "Detection of Linear and Circular Shapes in Image Analysis." Computational Statistics & Data Analysis
@@ -232,10 +235,11 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
             loss among the circles with which they overlap. Defaults to :code:`True`.
 
     Returns:
-        : Tuple of two lists of arrays. Both lists contain one array per batch item. The arrays in the first list
-        contain the parameters of the detected circles (in the following order: x-coordinate of the center, y-coordinate
-        of the center, radius). The arrays in the second list contain the fitting losses of the detected circles (lower
-        means better).
+        : Tuple of two lists of arrays if :code:`batch_indices` is not :code:`None`, and tuple of two arrays otherwise.
+        In the first case, both lists contain one array per batch item. The arrays in the first tuple element contain
+        the parameters of the detected circles (in the following order: x-coordinate of the center, y-coordinate
+        of the center, radius). The arrays in the second tuple element contain the fitting losses of the detected
+        circles (lower means better).
 
     Raises:
         ValueError: if :code:`min_start_x` is larger than :code:`max_start_x`.
@@ -273,8 +277,10 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
         - :code:`break_max_y`: scalar or array of shape :math:`(B)`
         - :code:`break_min_radius`: scalar or array of shape :math:`(B)`
         - :code:`break_max_radius`: scalar or array of shape :math:`(B)`
-        - Output: Both lists have lengtzb :math:`(B)`. In the first list, each element is an array of shape
-          :math:`(C_i, 3)`, and in the second list each element is an array of shape :math:`(C_i)`.
+        - Output: If :code:`batch_indices` is not :code:`None`, two lists of length :math:`(B)` are returned. In the
+          first list, each element is an array of shape :math:`(C_i, 3)`, and in the second list each element is an
+          array of shape :math:`(C_i)`. If :code:`batch_indices` is :code:`None`, the output is an tuple of two arrays,
+          where the first array has shape :code:`(C, 3)` and the second array has shape :math:`(C)`.
 
         | where
         |
@@ -284,8 +290,10 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
         | :math:`C = \text{ number of detected circles}`
         | :math:`C_i = \text{ number of circles detected for the i-th batch item}`
     """
+    batch_indices_was_none = False
     if batch_indices is None:
         batch_indices = [np.arange(len(xy), dtype=np.int64).tolist()]
+        batch_indices_was_none = True
     num_batches = len(batch_indices)
 
     if num_batches == 0:
@@ -457,5 +465,8 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
             fitting_losses[batch_idx] = fitting_losses[batch_idx][sorting_indices]
             detected_circles[batch_idx] = detected_circles[batch_idx][:max_circles]
             fitting_losses[batch_idx] = fitting_losses[batch_idx][:max_circles]
+
+    if batch_indices_was_none:
+        return detected_circles[0], fitting_losses[0]
 
     return detected_circles, fitting_losses
