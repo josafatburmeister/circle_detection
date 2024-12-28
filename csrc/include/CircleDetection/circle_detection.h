@@ -1,7 +1,4 @@
 #include <omp.h>
-#include <pybind11/eigen.h>
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
 
 #include <Eigen/Dense>
 #include <cmath>
@@ -27,6 +24,9 @@ double loss_fn_derivative_2_scalar(double scaled_residual) {
   return loss_fn_scalar(scaled_residual) * (scaled_residual * scaled_residual - 1);
 }
 
+}  // namespace
+
+namespace CircleDetection {
 std::tuple<ArrayX3d, ArrayXd> detect_circles(ArrayX2d xy, double bandwidth, double min_start_x, double max_start_x,
                                              int n_start_x, double min_start_y, double max_start_y, int n_start_y,
                                              double min_start_radius, double max_start_radius, int n_start_radius,
@@ -234,23 +234,4 @@ std::tuple<ArrayX3d, ArrayXd> detect_circles(ArrayX2d xy, double bandwidth, doub
 
   return std::make_tuple(fitted_circles(converged_indices, Eigen::all), fitting_losses(converged_indices));
 }
-
-}  // namespace
-
-PYBIND11_MODULE(_circle_detection_cpp, m) {
-  m.doc() = R"pbdoc(
-    Circle detection in 2D point sets.
-  )pbdoc";
-
-  m.def("detect_circles", &detect_circles, pybind11::return_value_policy::reference_internal, R"pbdoc(
-    C++ implementation of the M-estimator-based circle detection method proposed by Tim Garlipp and Christine H.
-    Müller. For more details, see the documentation of the Python wrapper method
-    :code:`circle_detection.detect_circles()`.
-  )pbdoc");
-
-#ifdef VERSION_INFO
-  m.attr("__version__") = (VERSION_INFO);
-#else
-  m.attr("__version__") = "dev";
-#endif
-}
+}  // namespace CircleDetection

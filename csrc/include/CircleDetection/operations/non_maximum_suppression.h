@@ -1,8 +1,4 @@
 
-#include <pybind11/eigen.h>
-#include <pybind11/numpy.h>
-#include <pybind11/pybind11.h>
-
 #include <Eigen/Dense>
 #include <cmath>
 #include <iostream>
@@ -10,6 +6,7 @@
 
 using namespace Eigen;
 
+namespace CircleDetection {
 std::tuple<ArrayX3d, ArrayXd> non_maximum_suppression(ArrayX3d circles, ArrayXd fitting_scores) {
   std::vector<int> kept_indices = {};
   std::vector<int> sorted_indices(circles.rows());
@@ -40,3 +37,4 @@ std::tuple<ArrayX3d, ArrayXd> non_maximum_suppression(ArrayX3d circles, ArrayXd 
 
   return std::make_tuple(circles(kept_indices, Eigen::all), fitting_scores(kept_indices));
 }
+}  // namespace CircleDetection
