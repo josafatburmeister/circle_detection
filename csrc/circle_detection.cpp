@@ -78,7 +78,7 @@ std::tuple<ArrayX3d, ArrayXd> detect_circles(ArrayX2d xy, double bandwidth, doub
       ArrayXd squared_dists_to_center = (xy.matrix().rowwise() - center).rowwise().squaredNorm().array();
       ArrayXd dists_to_center = squared_dists_to_center.array().sqrt();
       ArrayXd scaled_residuals = (dists_to_center - radius) / bandwidth;
-      fitting_loss = scaled_residuals.unaryExpr(&loss_fn_scalar).mean();
+      fitting_loss = scaled_residuals.unaryExpr(&loss_fn_scalar).sum();
 
       // first derivative of the outer term of the loss function
       ArrayXd outer_derivative_1 = scaled_residuals.unaryExpr(&loss_fn_derivative_1_scalar);
@@ -103,34 +103,34 @@ std::tuple<ArrayX3d, ArrayXd> detect_circles(ArrayX2d xy, double bandwidth, doub
                                        (xy.col(0) - center[0]) * (xy.col(1) - center[1]);
 
       // first derivatives of the entire loss function with respect to the circle parameters
-      RowVector2d derivative_xy = (outer_derivative_1.replicate(1, 2) * inner_derivative_1_x).matrix().colwise().mean();
-      double derivative_r = (outer_derivative_1 * inner_derivative_1_r).matrix().mean();
+      RowVector2d derivative_xy = (outer_derivative_1.replicate(1, 2) * inner_derivative_1_x).matrix().colwise().sum();
+      double derivative_r = (outer_derivative_1 * inner_derivative_1_r).matrix().sum();
       Vector3d gradient(derivative_xy[0], derivative_xy[1], derivative_r);
 
       // second derivatives of the entire loss function with respect to the circle parameters
       double derivative_x_x = ((outer_derivative_2 * inner_derivative_1_x.col(0).square()) +
                                (outer_derivative_1 * inner_derivative_2_x_x.col(0)))
                                   .matrix()
-                                  .mean();
+                                  .sum();
       double derivative_x_y = ((outer_derivative_2 * inner_derivative_1_x.col(1) * inner_derivative_1_x.col(0)) +
                                (outer_derivative_1 * inner_derivative_2_x_y))
                                   .matrix()
-                                  .mean();
-      double derivative_x_r = (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_x.col(0)).matrix().mean();
+                                  .sum();
+      double derivative_x_r = (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_x.col(0)).matrix().sum();
 
       double derivative_y_x = ((outer_derivative_2 * inner_derivative_1_x.col(0) * inner_derivative_1_x.col(1)) +
                                (outer_derivative_1 * inner_derivative_2_x_y))
                                   .matrix()
-                                  .mean();
+                                  .sum();
       double derivative_y_y = ((outer_derivative_2 * inner_derivative_1_x.col(1).square()) +
                                (outer_derivative_1 * inner_derivative_2_x_x.col(1)))
                                   .matrix()
-                                  .mean();
-      double derivative_y_r = (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_x.col(1)).matrix().mean();
+                                  .sum();
+      double derivative_y_r = (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_x.col(1)).matrix().sum();
 
-      double derivative_r_x = (outer_derivative_2 * inner_derivative_1_x.col(0) * inner_derivative_1_r).matrix().mean();
-      double derivative_r_y = (outer_derivative_2 * inner_derivative_1_x.col(1) * inner_derivative_1_r).matrix().mean();
-      double derivative_r_r = (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_r).matrix().mean();
+      double derivative_r_x = (outer_derivative_2 * inner_derivative_1_x.col(0) * inner_derivative_1_r).matrix().sum();
+      double derivative_r_y = (outer_derivative_2 * inner_derivative_1_x.col(1) * inner_derivative_1_r).matrix().sum();
+      double derivative_r_r = (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_r).matrix().sum();
 
       Matrix3d hessian(3, 3);
       hessian << derivative_x_x, derivative_x_y, derivative_x_r, derivative_y_x, derivative_y_y, derivative_y_r,
@@ -153,7 +153,7 @@ std::tuple<ArrayX3d, ArrayXd> detect_circles(ArrayX2d xy, double bandwidth, doub
         auto next_radius = radius + (next_step_size * step_direction[2]);
         ArrayXd next_scaled_residuals =
             ((xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) / bandwidth;
-        auto next_loss = next_scaled_residuals.unaryExpr(&loss_fn_scalar).mean();
+        auto next_loss = next_scaled_residuals.unaryExpr(&loss_fn_scalar).sum();
         auto previous_loss = fitting_loss;
 
         while (next_loss < previous_loss) {
@@ -166,7 +166,7 @@ std::tuple<ArrayX3d, ArrayXd> detect_circles(ArrayX2d xy, double bandwidth, doub
           auto next_radius = radius + (next_step_size * step_direction[2]);
           ArrayXd next_scaled_residuals =
               ((xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) / bandwidth;
-          next_loss = next_scaled_residuals.unaryExpr(&loss_fn_scalar).mean();
+          next_loss = next_scaled_residuals.unaryExpr(&loss_fn_scalar).sum();
         }
       }
 
@@ -188,7 +188,7 @@ std::tuple<ArrayX3d, ArrayXd> detect_circles(ArrayX2d xy, double bandwidth, doub
           auto next_radius = radius + (step_size * step_direction[2]);
           ArrayXd next_scaled_residuals =
               ((xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) / bandwidth;
-          auto next_loss = next_scaled_residuals.unaryExpr(&loss_fn_scalar).mean();
+          auto next_loss = next_scaled_residuals.unaryExpr(&loss_fn_scalar).sum();
           fitting_score = -1 * next_loss;
 
           actual_loss_diff = next_loss - fitting_loss;
@@ -204,7 +204,7 @@ std::tuple<ArrayX3d, ArrayXd> detect_circles(ArrayX2d xy, double bandwidth, doub
 
       if (!std::isfinite(center[0]) || !std::isfinite(center[1]) || !std::isfinite(radius) || center[0] < break_min_x ||
           center[0] > break_max_x || center[1] < break_min_y || center[1] > break_max_y || radius < break_min_radius ||
-          radius > break_max_radius || radius <= 0) {
+          radius > break_max_radius || radius <= 0 || iteration == max_iterations - 1) {
         diverged = true;
         break;
       }

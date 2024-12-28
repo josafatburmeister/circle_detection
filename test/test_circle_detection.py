@@ -163,7 +163,7 @@ class TestCircleDetection:
         for circle in detected_circles:
             residuals = (np.linalg.norm(xy - circle[:2], axis=-1) - circle[2]) / bandwidth
             expected_loss = -1 / np.sqrt(2 * np.pi) * np.exp(-1 / 2 * residuals**2)
-            expected_fitting_losses.append(expected_loss.mean())
+            expected_fitting_losses.append(expected_loss.sum())
 
         assert (np.abs(original_circles - detected_circles) < 0.03).all()
         np.testing.assert_almost_equal(expected_fitting_losses, fitting_losses, decimal=5)
@@ -202,7 +202,7 @@ class TestCircleDetection:
             max_iterations=1000,
             deduplication_precision=3,
             non_maximum_suppression=True,
-            min_fitting_score=0.05,
+            min_fitting_score=5,
         )
 
         assert len(original_circles) == len(detected_circles)
