@@ -111,7 +111,8 @@ class TestCircleDetection:
         if isinstance(variance, np.ndarray) and len(variance) != len(circles):
             raise ValueError("Length of variance must be equal to num_circles.")
 
-        for circle_idx, circle in enumerate(circles):
+        circle: npt.NDArray[np.float64]
+        for circle_idx, circle in enumerate(circles):  # type: ignore[assignment]
             num_points = int(random_generator.uniform(min_points, max_points))
 
             angles = np.linspace(0, 2 * np.pi, num_points)
@@ -216,6 +217,24 @@ class TestCircleDetection:
                     break
 
             assert matches_with_detected_circle
+
+    def test_batch_processing(self):
+        original_circles = np.array([[0, 0, 0.5], [0, 0, 0.52]])
+        xy_1 = self._generate_circle_points(original_circles[:1], min_points=100, max_points=100, variance=0.0)
+        xy_2 = self._generate_circle_points(original_circles[1:], min_points=100, max_points=100, variance=0.0)
+        batch_indices = np.split(np.arange(len(xy_1) + len(xy_2), dtype=np.int64), 2)
+        bandwidth = 0.05
+
+        detected_circles, fitting_losses = detect_circles(
+            np.concatenate((xy_1, xy_2)), bandwidth=bandwidth, batch_indices=batch_indices, max_circles=1
+        )
+
+        num_batches = len(batch_indices)
+        assert len(detected_circles) == num_batches
+        assert len(fitting_losses) == num_batches
+
+        for batch_idx in range(num_batches):
+            np.testing.assert_almost_equal(original_circles[batch_idx], detected_circles[batch_idx][0], decimal=5)
 
     @pytest.mark.parametrize(
         "kwargs",
