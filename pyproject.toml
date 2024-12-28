@@ -68,3 +68,6 @@ version_toml = [
 branch = "main"
 changelog_file = "CHANGELOG.md"
 build_command = "python -m build"
+
+[tool.scikit-build]
+cmake.args = ["-DBUILD_LIB=OFF"]

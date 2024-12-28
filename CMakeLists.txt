@@ -1,8 +1,25 @@
 cmake_minimum_required(VERSION 3.30...3.35)
 project(${SKBUILD_PROJECT_NAME} LANGUAGES CXX)
 
-set(PYBIND11_NEWPYTHON ON)
-find_package(pybind11 CONFIG REQUIRED)
+include(GNUInstallDirs)
+include(CMakePackageConfigHelpers)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED)
+
+option(BUILD_PYTHON_BINDINGS "Build the Python bindings." ON)
+option(BUILD_LIB "Build the header-only library." ON)
+
+# Read the package version from pyproject.toml using a regular expression
+set(PYPROJECT_FILE "${CMAKE_SOURCE_DIR}/pyproject.toml")
+file(READ "${PYPROJECT_FILE}" PYPROJECT_CONTENTS)
+
+string(REGEX MATCH "version[ \t]*=[ \t]*\"([0-9]+\.[0-9]+\.[0-9]+)\"" VERSION_MATCH "${PYPROJECT_CONTENTS}")
+if(VERSION_MATCH)
+    string(REGEX REPLACE "version[ \t]*=[ \t]*\"([0-9]+\.[0-9]+\.[0-9]+)\"" "\\1" PROJECT_VERSION "${VERSION_MATCH}")
+else()
+    message(FATAL_ERROR "Could not extract package version from pyproject.toml")
+endif()
 
 if(APPLE)
     execute_process(COMMAND brew --prefix OUTPUT_VARIABLE BREW_PREFIX OUTPUT_STRIP_TRAILING_WHITESPACE)
@@ -34,10 +51,49 @@ endif()
 
 include_directories( ${EIGEN_INCLUDE_DIR} )
 
-pybind11_add_module(_circle_detection_cpp MODULE csrc/circle_detection.cpp)
-target_link_libraries(_circle_detection_cpp PUBLIC OpenMP::OpenMP_CXX)
+if(BUILD_LIB)
+  set(LIB_NAME CircleDetection)
 
-pybind11_add_module(_operations_cpp MODULE csrc/operations/operations.cpp csrc/operations/non_maximum_suppression.cpp)
+  add_library(${LIB_NAME} INTERFACE)
 
-install(TARGETS _circle_detection_cpp DESTINATION "${SKBUILD_PROJECT_NAME}")
-install(TARGETS _operations_cpp DESTINATION "${SKBUILD_PROJECT_NAME}/operations")
+  target_include_directories(${LIB_NAME} INTERFACE
+    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/csrc/include>
+    $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>)
+
+  target_compile_features(${LIB_NAME} INTERFACE cxx_std_17)
+
+  install(TARGETS ${LIB_NAME} EXPORT ${LIB_NAME}Targets)
+
+  include(CMakePackageConfigHelpers)
+  write_basic_package_version_file("${LIB_NAME}ConfigVersion.cmake" VERSION ${PROJECT_VERSION} COMPATIBILITY SameMajorVersion)
+
+  configure_package_config_file(
+    ${PROJECT_SOURCE_DIR}/cmake/${LIB_NAME}Config.cmake.in
+    "${PROJECT_BINARY_DIR}/${LIB_NAME}Config.cmake"
+    INSTALL_DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${LIB_NAME}/cmake
+  )
+
+  install(FILES "${PROJECT_BINARY_DIR}/${LIB_NAME}Config.cmake"
+                "${PROJECT_BINARY_DIR}/${LIB_NAME}ConfigVersion.cmake"
+          DESTINATION ${CMAKE_INSTALL_DATAROOTDIR}/${LIB_NAME}/cmake)
+
+  install(DIRECTORY ${PROJECT_SOURCE_DIR}/csrc/include DESTINATION .)
+
+endif()
+
+if(BUILD_PYTHON_BINDINGS)
+
+  include_directories( ${PROJECT_SOURCE_DIR}/csrc/include )
+
+  set(PYBIND11_NEWPYTHON ON)
+  find_package(pybind11 CONFIG REQUIRED)
+
+  pybind11_add_module(_circle_detection_cpp MODULE csrc/pybind/circle_detection_pybind.cpp)
+  target_link_libraries(_circle_detection_cpp PUBLIC OpenMP::OpenMP_CXX)
+
+  pybind11_add_module(_operations_cpp MODULE csrc/pybind/operations_pybind.cpp)
+  target_link_libraries(_operations_cpp PUBLIC OpenMP::OpenMP_CXX)
+
+  install(TARGETS _circle_detection_cpp DESTINATION "${SKBUILD_PROJECT_NAME}")
+  install(TARGETS _operations_cpp DESTINATION "${SKBUILD_PROJECT_NAME}/operations")
+endif()
