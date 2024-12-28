@@ -48,7 +48,8 @@ def circumferential_completeness_index(
 
     angular_step_size = 2 * np.pi / num_regions
 
-    for idx, circle in enumerate(circles):
+    circle: npt.NDArray[np.float64]
+    for idx, circle in enumerate(circles):  # type: ignore[assignment]
         centered_points = xy - circle[:2]
         radii = np.linalg.norm(centered_points, axis=-1)
 
