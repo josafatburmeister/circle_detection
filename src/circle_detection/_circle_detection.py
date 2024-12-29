@@ -174,7 +174,7 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
         min_start_x: Lower limit of the start values for the x-coordinates of the circle centers. Can be either a
             scalar, an array of values (one per batch item), or :code:`None`. If a scalar is provided, the same value is
             used for all batch items. If set to :code:`None`, the minimum of the x-coordinates in of the points within
-            each batch item is used as the default. Defaults to :code:`None`. 
+            each batch item is used as the default. Defaults to :code:`None`.
         max_start_x: Upper limit of the start values for the x-coordinates of the circle centers. Can be either a
             scalar, an array of values (one per batch item), or :code:`None`. If a scalar is provided, the same value is
             used for all batch items. If set to :code:`None`, the maximum of the x-coordinates in of the points within
@@ -203,32 +203,32 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
             smaller than this value during optimization, the optimization of the respective circle is terminated and the
             respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
             :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to :code:`None`,
-            :code:`min_start_x` is used as the default. Defaults to :code:`None`. 
+            :code:`min_start_x` is used as the default. Defaults to :code:`None`.
         break_max_x: Termination criterion for circle optimization. If the x-coordinate of a circle center becomes
             greater than this value during optimization, the optimization of the respective circle is terminated and the
             respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
             :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to :code:`None`,
-            :code:`max_start_x` is used as the default. Defaults to :code:`None`. 
+            :code:`max_start_x` is used as the default. Defaults to :code:`None`.
         break_min_y: Termination criterion for circle optimization. If the y-coordinate of a circle center becomes
             smaller than this value during optimization, the optimization of the respective circle is terminated and the
             respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
             :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to :code:`None`,
-            :code:`min_start_y` is used as the default. Defaults to :code:`None`. 
+            :code:`min_start_y` is used as the default. Defaults to :code:`None`.
         break_max_y: Termination criterion for circle optimization. If the y-coordinate of a circle center becomes
             greater than this value during optimization, the optimization of the respective circle is terminated and the
             respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
             :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to :code:`None`,
-            :code:`max_start_y` is used as the default. Defaults to :code:`None`. 
+            :code:`max_start_y` is used as the default. Defaults to :code:`None`.
         break_min_radius: Termination criterion for circle optimization. If the radius of a circle center becomes
             smaller than this value during optimization, the optimization of the respective circle is terminated and the
             respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
             :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to :code:`None`,
-            :code:`min_start_radius` is used as the default. Defaults to :code:`None`. 
+            :code:`min_start_radius` is used as the default. Defaults to :code:`None`.
         break_max_radius: Termination criterion for circle optimization. If the radius of a circle center becomes
             greater than this value during optimization, the optimization of the respective circle is terminated and the
             respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
             :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to :code:`None`,
-            :code:`max_start_radius` is used as the default. Defaults to :code:`None`. 
+            :code:`max_start_radius` is used as the default. Defaults to :code:`None`.
         break_min_change: Termination criterion for circle optimization. If the updates of all circle parameters in an
             iteration are smaller than this threshold, the optimization of the respective circle is terminated.
             Defaults to :math:`10^{-5}`.
