@@ -18,18 +18,57 @@ The package can be installed via pip:
 python -m pip install circle-detection
 ```
 
-The package provides a method ```detect_circles```, which can be used as follows:
+The package provides a ```CircleDetection``` class, which can be used as follows:
 
 ```python
-from circle_detection import detect_circles
+from circle_detection import CircleDetection
 import numpy as np
 
 xy = np.array([[-1, 0], [1, 0], [0, -1], [0, 1]], dtype=np.float64)
 
-detected_circles, fitting_losses = detect_circles(xy, bandwidth=0.05, max_circles=1)
+circle_detector = CircleDetection(bandwidth=0.05)
+circle_detector.detect(xy)
+circle_detector.filter(max_circles=1)
 
-if len(detected_circles) > 0:
-    circle_center_x, circle_center_y, circle_radius = detected_circles[0]
+print("circles:", circle_detector.circles)
+print("fitting losses:", circle_detector.fitting_losses)
+
+if len(circle_detector.circles) > 0:
+    circle_center_x, circle_center_y, circle_radius = circle_detector.circles[0]
+```
+
+The package also supports batch processing, i.e. the parallel detection of circles in separate sets of points. For batch
+processing, the points of all input point sets must be stored in a flat array. Points that belong to the same point set
+must be stored consecutively. The number of points per point set must then be specified using the `batch_lengths`
+parameter:
+
+```python
+from circle_detection import CircleDetection
+import numpy as np
+
+xy = np.array(
+    [
+        [-1, 0],
+        [1, 0],
+        [0, -1],
+        [0, 1],
+        [0, 1],
+        [2, 1],
+        [1, 0],
+        [1, 2],
+        [1 + np.sqrt(2), 1 + np.sqrt(2)],
+    ],
+    dtype=np.float64,
+)
+batch_lengths = np.array([4, 5], dtype=np.int64)
+
+circle_detector = CircleDetection(bandwidth=0.05)
+circle_detector.detect(xy, batch_lengths=batch_lengths)
+circle_detector.filter(max_circles=1)
+
+print("circles:", circle_detector.circles)
+print("fitting losses:", circle_detector.fitting_losses)
+print("number of circles detected in each point set:" circle_detector.batch_lengths_circles)
 ```
 
 ### Package Documentation
