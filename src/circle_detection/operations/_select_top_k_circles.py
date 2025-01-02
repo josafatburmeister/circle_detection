@@ -52,8 +52,8 @@ def select_top_k_circles(
         | where
         |
         | :math:`B = \text{ batch size}`
-        | :math:`C = \text{ number of circles before filtering}`
-        | :math:`C' = \text{ number of circles after filtering}`
+        | :math:`C = \text{ number of circles before the filtering}`
+        | :math:`C' = \text{ number of circles after the filtering}`
     """
     if len(circles) != len(fitting_losses):
         raise ValueError("circles and fitting_losses must have the same number of entries.")
