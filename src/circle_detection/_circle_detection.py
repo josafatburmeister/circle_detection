@@ -2,11 +2,16 @@
 
 __all__ = ["detect_circles"]
 
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union, cast
 import numpy as np
 import numpy.typing as npt
 
-from circle_detection.operations import non_maximum_suppression as non_maximum_suppression_op
+from circle_detection.operations import (
+    deduplicate_circles,
+    filter_circumferential_completeness_index,
+    non_maximum_suppression as non_maximum_suppression_op,
+    select_top_k_circles,
+)
 from ._circle_detection_cpp import (  # type: ignore[import-not-found] # pylint: disable = import-error
     detect_circles as detect_circles_cpp,
 )
@@ -15,21 +20,22 @@ from ._circle_detection_cpp import (  # type: ignore[import-not-found] # pylint:
 def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-arguments, too-many-locals, too-many-branches, too-many-statements
     xy: npt.NDArray[np.float64],
     bandwidth: float,
-    min_start_x: Optional[float] = None,
-    max_start_x: Optional[float] = None,
+    batch_lengths: Optional[npt.NDArray[np.int64]] = None,
+    min_start_x: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    max_start_x: Optional[Union[float, npt.NDArray[np.float64]]] = None,
     n_start_x: int = 10,
-    min_start_y: Optional[float] = None,
-    max_start_y: Optional[float] = None,
+    min_start_y: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    max_start_y: Optional[Union[float, npt.NDArray[np.float64]]] = None,
     n_start_y: int = 10,
-    min_start_radius: Optional[float] = None,
-    max_start_radius: Optional[float] = None,
+    min_start_radius: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    max_start_radius: Optional[Union[float, npt.NDArray[np.float64]]] = None,
     n_start_radius: int = 10,
-    break_min_x: Optional[float] = None,
-    break_max_x: Optional[float] = None,
-    break_min_y: Optional[float] = None,
-    break_max_y: Optional[float] = None,
-    break_min_radius: Optional[float] = None,
-    break_max_radius: Optional[float] = None,
+    break_min_x: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    break_max_x: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    break_min_y: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    break_max_y: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    break_min_radius: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+    break_max_radius: Optional[Union[float, npt.NDArray[np.float64]]] = None,
     break_min_change: float = 1e-5,
     max_iterations: int = 1000,
     acceleration_factor: float = 1.6,
@@ -39,8 +45,11 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
     deduplication_precision: int = 4,
     max_circles: Optional[int] = None,
     min_fitting_score: float = 1e-6,
+    min_circumferential_completeness_idx: Optional[float] = None,
+    circumferential_completeness_idx_max_dist: Optional[float] = None,
+    circumferential_completeness_idx_num_regions: Optional[int] = None,
     non_maximum_suppression: bool = True,
-) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64]]:
+) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.int64]]:
     r"""
     Detects circles in a set of 2D points using the M-estimator method proposed in `Garlipp, Tim, and Christine
     H. Müller. "Detection of Linear and Circular Shapes in Image Analysis." Computational Statistics & Data Analysis
@@ -165,46 +174,71 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
     Args:
         xy: Coordinates of the set of 2D points in which to detect circles.
         bandwidth: Kernel bandwidth.
-        min_start_x: Lower limit of the start values for the x-coordinates of the circle centers. Defaults to
-            :code:`None`. If set to :code:`None`, the minimum of the x-coordinates in :code:`xy` is used as the default.
-        max_start_x: Upper limit of the start values for the x-coordinates of the circle centers. Defaults to
-            :code:`None`. If set to :code:`None`, the maximum of the x-coordinates in :code:`xy` is used as the default.
+        batch_lengths: Number of points in each point set of the input batch. For batch processing, it is
+            expected that all points belonging to the same point set are stored consecutively in the :code:`xy` input
+            array. For example, if the input is a batch of two point sets (i.e., two batch items) with :math:`N_1`
+            points and :math:`N_2` points, then :code:`batch_lengths` should be set to :code:`[N_1, N_2]` and
+            :code:`xy[:N_1]` should contain the points of the first point set and :code:`circles[N_1:]` the points of
+            the second point set. If :code:`batch_lengths` is set to :code:`None`, it is assumed that the input points
+            all belong to the same point set and batch processing is disabled. Defaults to :code:`None`.
+        min_start_x: Lower limit of the start values for the x-coordinates of the circle centers. Can be either a
+            scalar, an array of values (one per batch item), or :code:`None`. If a scalar is provided, the same value is
+            used for all batch items. If set to :code:`None`, the minimum of the x-coordinates in of the points within
+            each batch item is used as the default. Defaults to :code:`None`.
+        max_start_x: Upper limit of the start values for the x-coordinates of the circle centers. Can be either a
+            scalar, an array of values (one per batch item), or :code:`None`. If a scalar is provided, the same value is
+            used for all batch items. If set to :code:`None`, the maximum of the x-coordinates in of the points within
+            each batch item is used as the default. Defaults to :code:`None`.
         n_start_x: Number of start values for the x-coordinates of the circle centers. Defaults to 10.
-        min_start_y: Lower limit of the start values for the y-coordinates of the circle centers. Defaults to
-            :code:`None`. If set to :code:`None`, the minimum of the y-coordinates in :code:`xy` is used as the default.
-        max_start_y: Upper limit of the start values for the y-coordinates of the circle centers. Defaults to
-            :code:`None`. If set to :code:`None`, the minimum of the y-coordinates in :code:`xy` is used as the default.
+        min_start_y: Lower limit of the start values for the y-coordinates of the circle centers. Can be either a
+            scalar, an array of values (one per batch item), or :code:`None`. If a scalar is provided, the same value is
+            used for all batch items. If set to :code:`None`, the minimum of the y-coordinates in of the points within
+            each batch item is used as the default. Defaults to :code:`None`.
+        max_start_y: Upper limit of the start values for the y-coordinates of the circle centers. Can be either a
+            scalar, an array of values (one per batch item), or :code:`None`. If a scalar is provided, the same value is
+            used for all batch items. If set to :code:`None`, the maximum of the y-coordinates in of the points within
+            each batch item is used as the default. Defaults to :code:`None`.
         n_start_y: Number of start values for the y-coordinates of the circle centers. Defaults to 10.
-        min_start_radius: Lower limit of the start values for the circle radii. Defaults to :code:`None`. If set to
-            :code:`None`, the :code:`0.1 * max_start_radius` is used as the default.
-        max_start-radius: Upper limit of the start values for the circle radii. Defaults to :code:`None`. If set to
-            :code:`None`, the axis-aligned bounding box of :code:`xy` is computed and the length of the longer side of
-            the bounding box is used as the default.
+        min_start_radius: Lower limit of the start values for the circle radii. Can be either a scalar, an array of
+            values (one per batch item), or :code:`None`. If a scalar is provided, the same value is used for all batch
+            items. If set to :code:`None`, :code:`0.1 * max_start_radius` is used as the default. Defaults to
+            :code:`None`.
+        max_start-radius: Upper limit of the start values for the circle radii. Can be either a scalar, an array of
+            values (one per batch item), or :code:`None`. If a scalar is provided, the same value is used for all batch
+            items. If set to :code:`None`, the axis-aligned bounding box of the points within each batch item is
+            computed and the length of the longer side of the bounding box is used as the default. Defaults to
+            :code:`None`.
         n_start_radius: Number of start values for the circle radii. Defaults to 10.
         break_min_x: Termination criterion for circle optimization. If the x-coordinate of a circle center becomes
             smaller than this value during optimization, the optimization of the respective circle is terminated and the
-            respective circle is discarded. Defaults to :code:`None`. If set to :code:`None`, :code:`min_start_x` is
-            used as the default.
+            respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
+            :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to :code:`None`,
+            :code:`min_start_x` is used as the default. Defaults to :code:`None`.
         break_max_x: Termination criterion for circle optimization. If the x-coordinate of a circle center becomes
             greater than this value during optimization, the optimization of the respective circle is terminated and the
-            respective circle is discarded. Defaults to :code:`None`. If set to :code:`None`, :code:`max_start_x` is
-            used as the default.
+            respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
+            :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to :code:`None`,
+            :code:`max_start_x` is used as the default. Defaults to :code:`None`.
         break_min_y: Termination criterion for circle optimization. If the y-coordinate of a circle center becomes
             smaller than this value during optimization, the optimization of the respective circle is terminated and the
-            respective circle is discarded. Defaults to :code:`None`. If set to :code:`None`, :code:`min_start_y` is
-            used as the default.
+            respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
+            :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to :code:`None`,
+            :code:`min_start_y` is used as the default. Defaults to :code:`None`.
         break_max_y: Termination criterion for circle optimization. If the y-coordinate of a circle center becomes
             greater than this value during optimization, the optimization of the respective circle is terminated and the
-            respective circle is discarded. Defaults to :code:`None`. If set to :code:`None`, :code:`max_start_y` is
-            used as the default.
+            respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
+            :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to :code:`None`,
+            :code:`max_start_y` is used as the default. Defaults to :code:`None`.
         break_min_radius: Termination criterion for circle optimization. If the radius of a circle center becomes
             smaller than this value during optimization, the optimization of the respective circle is terminated and the
-            respective circle is discarded. Defaults to :code:`None`. If set to :code:`None`, :code:`min_start_radius`
-            is used as the default.
+            respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
+            :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to :code:`None`,
+            :code:`min_start_radius` is used as the default. Defaults to :code:`None`.
         break_max_radius: Termination criterion for circle optimization. If the radius of a circle center becomes
             greater than this value during optimization, the optimization of the respective circle is terminated and the
-            respective circle is discarded. Defaults to :code:`None`. If set to :code:`None`, :code:`max_start_radius`
-            is used as the default.
+            respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
+            :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to :code:`None`,
+            :code:`max_start_radius` is used as the default. Defaults to :code:`None`.
         break_min_change: Termination criterion for circle optimization. If the updates of all circle parameters in an
             iteration are smaller than this threshold, the optimization of the respective circle is terminated.
             Defaults to :math:`10^{-5}`.
@@ -224,27 +258,41 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
             Defaults to 1000.
         min_fitting_score: Minimum fitting score (equal to -1 :math:`\cdot` fitting loss) that a circle must have in
             order not to be discarded. Defaults to :math:`10^{-6}`.
+        min_circumferential_completeness_idx: Minimum
+            `circumferential completeness index <https://doi.org/10.3390/rs12101652>`__ that a circle must have in
+            order to not be discarded. If :code:`min_circumferential_completeness_idx` is set,
+            :code:`circumferential_completeness_idx_num_regions` must also be set. If
+            :code:`min_circumferential_completeness_idx` is :code:`None`, no filtering based on the circumferential
+            completeness index is done. Defaults to :code:`None`.
+        circumferential_completeness_idx_max_dist: Maximum distance a point can have to the circle outline to be counted
+            as part of the circle when computing the circumferential completeness index. If set to :code:`None`,
+            points are counted as part of the circle if their distance to the circle is center is in the interval
+            :math:`[0.7 \cdot r, 1.3 \cdot r]` where :math:`r` is the circle radius. Defaults to :code:`None`.
+        circumferential_completeness_idx_num_regions: Number of angular regions for computing the circumferential
+            completeness index. Must not be :code:`None`, if :code:`min_circumferential_completeness_idx` is not
+            :code:`None`. Defaults to :code:`None`.
         non_maximum_suppression: Whether non-maximum suppression should be applied to the detected circles. If this
             option is enabled, circles that overlap with other circles, are only kept if they have the lowest fitting
             loss among the circles with which they overlap. Defaults to :code:`True`.
 
     Returns:
-        : Tuple of two arrays. The first array contains the parameters of the detected circles (in the following order:
-        x-coordinate of the center, y-coordinate of the center, radius). The second array contains the fitting losses of
-        the detected circles (lower means better).
+        : Tuple of three arrays. The first array contains the parameters of the detected circles (in the following
+        order: x-coordinate of the center, y-coordinate of the center, radius). The second array contains the fitting
+        losses of the detected circles (lower means better). The third array contains the number of circles detected for
+        each batch item (circles belonging to the same batch item are stored consecutively in the output array).
 
     Raises:
-        ValueError: if :code:`min_start_x` is larger than :code:`max_start_x`.
-        ValueError: if :code:`min_start_x` is smaller than :code:`break_min_x`.
-        ValueError: if :code:`max_start_x` is smaller than :code:`break_max_x`.
+        ValueError: if :code:`min_start_x` is larger than :code:`max_start_x` for any batch item.
+        ValueError: if :code:`min_start_x` is smaller than :code:`break_min_x` for any batch item.
+        ValueError: if :code:`max_start_x` is smaller than :code:`break_max_x` for any batch item.
 
-        ValueError: if :code:`min_start_y` is larger than :code:`max_start_y`.
-        ValueError: if :code:`min_start_y` is smaller than :code:`break_min_y`.
-        ValueError: if :code:`max_start_y` is smaller than :code:`break_max_y`.
+        ValueError: if :code:`min_start_y` is larger than :code:`max_start_y` for any batch item.
+        ValueError: if :code:`min_start_y` is smaller than :code:`break_min_y` for any batch item.
+        ValueError: if :code:`max_start_y` is smaller than :code:`break_max_y` for any batch item.
 
-        ValueError: if :code:`min_start_radius` is larger than :code:`max_start_radius`.
-        ValueError: if :code:`min_start_radius` is smaller than :code:`break_min_radius`.
-        ValueError: if :code:`max_start_radius` is larger than :code:`break_max_radius`.
+        ValueError: if :code:`min_start_radius` is larger than :code:`max_start_radius` for any batch item.
+        ValueError: if :code:`min_start_radius` is smaller than :code:`break_min_radius` for any batch item.
+        ValueError: if :code:`max_start_radius` is larger than :code:`break_max_radius` for any batch item.
 
         ValueError: if :code:`n_start_x` is not a positive number.
         ValueError: if :code:`n_start_y` is not a positive number.
@@ -254,65 +302,175 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
         ValueError: if :code:`armijo_attenuation_factor` is not within :math:`(0, 1)`.
         ValueError: if :code:`armijo_min_decrease_percentage` is not within :math:`(0, 1)`.
 
+        ValueError: if :code:`min_circumferential_completeness_idx` is not :code:`None` and
+          :code:`circumferential_completeness_idx_num_regions` is :code:`None`
+
     Shape:
         - :code:`xy`: :math:`(N, 2)`
-        - Output: The first array in the output tuple has shape :math:`(C, 3)` and the second shape :math:`(C)`.
+        - :code:`batch_lengths`: :math:`(B)`
+        - :code:`min_start_x`: scalar or array of shape :math:`(B)`
+        - :code:`max_start_x`: scalar or array of shape :math:`(B)`
+        - :code:`max_start_y`: scalar or array of shape :math:`(B)`
+        - :code:`max_start_y`: scalar or array of shape :math:`(B)`
+        - :code:`min_start_radius`: scalar or array of shape :math:`(B)`
+        - :code:`max_start_radius`: scalar or array of shape :math:`(B)`
+        - :code:`break_min_x`: scalar or array of shape :math:`(B)`
+        - :code:`break_max_x`: scalar or array of shape :math:`(B)`
+        - :code:`break_min_y`: scalar or array of shape :math:`(B)`
+        - :code:`break_max_y`: scalar or array of shape :math:`(B)`
+        - :code:`break_min_radius`: scalar or array of shape :math:`(B)`
+        - :code:`break_max_radius`: scalar or array of shape :math:`(B)`
+        - Output: The first array in the output tuple has shape :math:`(C, 3)`, the second shape :math:`(C)`, and the
+          third shape :math:`(B)`.
 
         | where
         |
+        | :math:`B = \text{ batch size}`
         | :math:`N = \text{ number of points}`
         | :math:`C = \text{ number of detected circles}`
     """
+    if batch_lengths is None:
+        batch_lengths = np.array([len(xy)], dtype=np.int64)
+    num_batches = len(batch_lengths)
+    batch_starts = np.cumsum(np.concatenate(([0], batch_lengths)))[:-1]
+    batch_ends = np.cumsum(batch_lengths)
+
+    if num_batches == 0:
+        raise ValueError("batch_lengths must contain at least one entry.")
+
+    if min_circumferential_completeness_idx is not None and circumferential_completeness_idx_num_regions is None:
+        raise ValueError(
+            "circumferential_completeness_idx_num_regions must be set if min_circumferential_completeness_idx is set."
+        )
 
     if min_start_x is None:
-        min_start_x = xy[:, 0].min()
+        min_start_x = np.array(
+            [
+                xy[batch_start:batch_end, 0].min() if batch_start < batch_end else 0
+                for (batch_start, batch_end) in zip(batch_starts, batch_ends)
+            ],
+            dtype=np.float64,
+        )
+    elif not isinstance(min_start_x, np.ndarray):
+        min_start_x = np.full(num_batches, fill_value=min_start_x, dtype=np.float64)
+    min_start_x = cast(npt.NDArray[np.float64], min_start_x)
+
     if max_start_x is None:
-        max_start_x = xy[:, 0].max()
+        max_start_x = np.array(
+            [
+                xy[batch_start:batch_end, 0].max() if batch_start < batch_end else 0
+                for (batch_start, batch_end) in zip(batch_starts, batch_ends)
+            ],
+            dtype=np.float64,
+        )
+    elif not isinstance(max_start_x, np.ndarray):
+        max_start_x = np.full(num_batches, fill_value=max_start_x, dtype=np.float64)
+    max_start_x = cast(npt.NDArray[np.float64], max_start_x)
+
     if break_min_x is None:
         break_min_x = min_start_x
+    elif not isinstance(break_min_x, np.ndarray):
+        break_min_x = np.full(num_batches, fill_value=break_min_x, dtype=np.float64)
+    break_min_x = cast(npt.NDArray[np.float64], break_min_x)
+
     if break_max_x is None:
         break_max_x = max_start_x
+    elif not isinstance(break_max_x, np.ndarray):
+        break_max_x = np.full(num_batches, fill_value=break_max_x, dtype=np.float64)
+    break_max_x = cast(npt.NDArray[np.float64], break_max_x)
 
-    if min_start_x > max_start_x:
+    if (min_start_x > max_start_x).any():
         raise ValueError("min_start_x must be smaller than or equal to max_start_x.")
-    if min_start_x < break_min_x:
+    if (min_start_x < break_min_x).any():
         raise ValueError("min_start_x must be larger than or equal to min_break_x.")
-    if max_start_x > break_max_x:
+    if (max_start_x > break_max_x).any():
         raise ValueError("max_start_x must be smaller than or equal to break_max_x.")
 
     if min_start_y is None:
-        min_start_y = xy[:, 1].min()
+        min_start_y = np.array(
+            [
+                xy[batch_start:batch_end, 1].min() if batch_start < batch_end else 0
+                for (batch_start, batch_end) in zip(batch_starts, batch_ends)
+            ],
+            dtype=np.float64,
+        )
+    elif not isinstance(min_start_y, np.ndarray):
+        min_start_y = np.full(num_batches, fill_value=min_start_y, dtype=np.float64)
+    min_start_y = cast(npt.NDArray[np.float64], min_start_y)
+
     if max_start_y is None:
-        max_start_y = xy[:, 1].max()
-    if break_min_y is None:
+        max_start_y = np.array(
+            [
+                xy[batch_start:batch_end, 1].max() if batch_start < batch_end else 0
+                for (batch_start, batch_end) in zip(batch_starts, batch_ends)
+            ],
+            dtype=np.float64,
+        )
+    elif not isinstance(max_start_y, np.ndarray):
+        max_start_y = np.full(num_batches, fill_value=max_start_y, dtype=np.float64)
+    max_start_y = cast(npt.NDArray[np.float64], max_start_y)
+
+    if break_max_y is None:
         break_min_y = min_start_y
+    elif not isinstance(break_max_y, np.ndarray):
+        break_min_y = np.full(num_batches, fill_value=break_min_y, dtype=np.float64)
+    break_min_y = cast(npt.NDArray[np.float64], break_min_y)
+
     if break_max_y is None:
         break_max_y = max_start_y
+    elif not isinstance(break_max_y, np.ndarray):
+        break_max_y = np.full(num_batches, fill_value=break_max_y, dtype=np.float64)
+    break_max_y = cast(npt.NDArray[np.float64], break_max_y)
 
-    if min_start_y > max_start_y:
+    if (min_start_y > max_start_y).any():
         raise ValueError("min_start_y must be smaller than or equal to max_start_y.")
-    if min_start_y < break_min_y:
+    if (min_start_y < break_min_y).any():
         raise ValueError("min_start_y must be larger than or equal to min_break_y.")
-    if max_start_y > break_max_y:
+    if (max_start_y > break_max_y).any():
         raise ValueError("max_start_y must be smaller than or equal to break_max_y.")
 
     if max_start_radius is None:
-        max_start_radius = (xy.max(axis=0) - xy.min(axis=0)).max()
+        max_start_radius = np.array(
+            [
+                (
+                    (xy[batch_start:batch_end].max(axis=0) - xy[batch_start:batch_end].min(axis=0)).max()
+                    if batch_start < batch_end
+                    else 0.1
+                )
+                for (batch_start, batch_end) in zip(batch_starts, batch_ends)
+            ]
+        )
+        max_start_radius = np.full(num_batches, fill_value=max_start_radius, dtype=np.float64)
+    elif not isinstance(max_start_radius, np.ndarray):
+        max_start_radius = np.full(num_batches, fill_value=max_start_radius, dtype=np.float64)
+    max_start_radius = cast(npt.NDArray[np.float64], max_start_radius)
+
     if min_start_radius is None:
-        min_start_radius = 0.1 * max_start_radius
+        min_start_radius = 0.1 * max_start_radius  # type: ignore[assignment]
+    elif not isinstance(min_start_radius, np.ndarray):
+        min_start_radius = np.full(num_batches, fill_value=min_start_radius, dtype=np.float64)
+    min_start_radius = cast(npt.NDArray[np.float64], min_start_radius)
+
     if break_min_radius is None:
         break_min_radius = min_start_radius
+    elif not isinstance(break_min_radius, np.ndarray):
+        break_min_radius = np.full(num_batches, fill_value=break_min_radius, dtype=np.float64)
+    break_min_radius = cast(npt.NDArray[np.float64], break_min_radius)
+
     if break_max_radius is None:
         break_max_radius = max_start_radius
+    elif not isinstance(break_max_radius, np.ndarray):
+        break_max_radius = np.full(num_batches, fill_value=break_max_radius, dtype=np.float64)
+    break_max_radius = cast(npt.NDArray[np.float64], break_max_radius)
 
-    if min_start_radius < 0:
+    if (min_start_radius < 0).any():
         raise ValueError("min_start_radius must be larger than zero.")
 
-    if min_start_radius > max_start_radius:
+    if (min_start_radius > max_start_radius).any():
         raise ValueError("min_start_radius must be smaller than or equal to max_start_radius.")
-    if min_start_radius < break_min_radius:
+    if (min_start_radius < break_min_radius).any():
         raise ValueError("min_start_radius must be larger than or equal to break_min_radius.")
-    if max_start_radius > break_max_radius:
+    if (max_start_radius > break_max_radius).any():
         raise ValueError("max_start_radius must be smaller than or equal to break_max_radius.")
 
     if n_start_x <= 0:
@@ -332,26 +490,27 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
     if deduplication_precision < 0:
         raise ValueError("deduplication_precision must be a positive number.")
 
-    break_min_radius = max(break_min_radius, 0)
+    break_min_radius = np.maximum(break_min_radius, 0)
 
-    result = detect_circles_cpp(
+    detected_circles, fitting_losses, batch_lengths_circles = detect_circles_cpp(
         xy,
+        batch_lengths,
         float(bandwidth),
-        float(min_start_x),
-        float(max_start_x),
+        min_start_x,
+        max_start_x,
         int(n_start_x),
-        float(min_start_y),
-        float(max_start_y),
+        min_start_y,
+        max_start_y,
         int(n_start_y),
-        float(min_start_radius),
-        float(max_start_radius),
+        min_start_radius,
+        max_start_radius,
         int(n_start_radius),
-        float(break_min_x),
-        float(break_max_x),
-        float(break_min_y),
-        float(break_max_y),
-        float(break_min_radius),
-        float(break_max_radius),
+        break_min_x,
+        break_max_x,
+        break_min_y,
+        break_max_y,
+        break_min_radius,
+        break_max_radius,
         float(break_min_change),
         int(max_iterations),
         float(acceleration_factor),
@@ -361,20 +520,33 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
         float(min_fitting_score),
     )
 
-    detected_circles, fitting_losses = result
-
-    detected_circles = np.round(detected_circles, decimals=deduplication_precision)
-    detected_circles, kept_indices = np.unique(detected_circles, return_index=True, axis=0)
-    fitting_losses = fitting_losses[kept_indices]
+    detected_circles, batch_lengths_circles, selected_indices = deduplicate_circles(
+        detected_circles, deduplication_precision, batch_lengths=batch_lengths_circles
+    )
+    fitting_losses = fitting_losses[selected_indices]
 
     if non_maximum_suppression and (max_circles is None or max_circles > 1):
-        detected_circles, fitting_losses = non_maximum_suppression_op(detected_circles, fitting_losses)
+        detected_circles, fitting_losses, batch_lengths_circles, _ = non_maximum_suppression_op(
+            detected_circles, fitting_losses, batch_lengths_circles
+        )
+
+    if min_circumferential_completeness_idx is not None:
+        if circumferential_completeness_idx_max_dist is None:
+            circumferential_completeness_idx_max_dist = bandwidth
+        detected_circles, batch_lengths_circles, selected_indices = filter_circumferential_completeness_index(
+            detected_circles,
+            xy,
+            num_regions=cast(int, circumferential_completeness_idx_num_regions),
+            min_circumferential_completeness_index=min_circumferential_completeness_idx,
+            max_dist=circumferential_completeness_idx_max_dist,
+            batch_lengths_circles=batch_lengths_circles,
+            batch_lengths_xy=batch_lengths,
+        )
+        fitting_losses = fitting_losses[selected_indices]
 
     if max_circles is not None:
-        sorting_indices = np.argsort(fitting_losses)
-        detected_circles = detected_circles[sorting_indices]
-        fitting_losses = fitting_losses[sorting_indices]
-        detected_circles = detected_circles[:max_circles]
-        fitting_losses = fitting_losses[:max_circles]
+        detected_circles, fitting_losses, batch_lengths_circles, _ = select_top_k_circles(
+            detected_circles, fitting_losses, k=max_circles, batch_lengths=batch_lengths_circles
+        )
 
-    return detected_circles, fitting_losses
+    return detected_circles, fitting_losses, batch_lengths_circles

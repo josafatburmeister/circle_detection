@@ -111,7 +111,8 @@ class TestCircleDetection:
         if isinstance(variance, np.ndarray) and len(variance) != len(circles):
             raise ValueError("Length of variance must be equal to num_circles.")
 
-        for circle_idx, circle in enumerate(circles):
+        circle: npt.NDArray[np.float64]
+        for circle_idx, circle in enumerate(circles):  # type: ignore[assignment]
             num_points = int(random_generator.uniform(min_points, max_points))
 
             angles = np.linspace(0, 2 * np.pi, num_points)
@@ -142,22 +143,24 @@ class TestCircleDetection:
         xy = self._generate_circle_points(
             original_circles, min_points=100, max_points=100, variance=np.array([0, 0.05])
         )
-        bandwidth = 0.05
+        bandwidth = 0.07
 
-        detected_circles, fitting_losses = detect_circles(xy, bandwidth=bandwidth, max_circles=1)
+        detected_circles, fitting_losses, batch_lengths_circles = detect_circles(xy, bandwidth=bandwidth, max_circles=1)
 
         assert len(detected_circles) == 1
         assert len(fitting_losses) == 1
+        np.testing.assert_array_equal(batch_lengths_circles, np.array([1], dtype=np.int64))
 
         # the first circle is expected to be returned because its points have lower variance
-        np.testing.assert_array_equal(original_circles[0], detected_circles[0])
+        np.testing.assert_almost_equal(original_circles[0], detected_circles[0], decimal=10)
 
-        detected_circles, fitting_losses = detect_circles(
+        detected_circles, fitting_losses, batch_lengths_circles = detect_circles(
             xy, bandwidth=bandwidth, max_circles=2, non_maximum_suppression=True
         )
 
         assert len(detected_circles) == 2
         assert len(fitting_losses) == 2
+        np.testing.assert_array_equal(batch_lengths_circles, np.array([2], dtype=np.int64))
 
         expected_fitting_losses = []
         for circle in detected_circles:
@@ -165,7 +168,7 @@ class TestCircleDetection:
             expected_loss = -1 / np.sqrt(2 * np.pi) * np.exp(-1 / 2 * residuals**2)
             expected_fitting_losses.append(expected_loss.sum())
 
-        assert (np.abs(original_circles - detected_circles) < 0.03).all()
+        assert (np.abs(original_circles - detected_circles) < 0.01).all()
         np.testing.assert_almost_equal(expected_fitting_losses, fitting_losses, decimal=5)
 
     def test_several_noisy_circles(self):
@@ -181,7 +184,7 @@ class TestCircleDetection:
         min_start_xy = xy.min(axis=0) - 2
         max_start_xy = xy.max(axis=0) + 2
 
-        detected_circles, fitting_losses = detect_circles(
+        detected_circles, fitting_losses, batch_lengths_circles = detect_circles(
             xy,
             bandwidth=0.05,
             min_start_x=min_start_xy[0],
@@ -207,6 +210,7 @@ class TestCircleDetection:
 
         assert len(original_circles) == len(detected_circles)
         assert len(detected_circles) == len(fitting_losses)
+        np.testing.assert_array_equal(batch_lengths_circles, np.array([len(original_circles)], dtype=np.int64))
 
         for original_circle in original_circles:
             matches_with_detected_circle = False
@@ -216,6 +220,78 @@ class TestCircleDetection:
                     break
 
             assert matches_with_detected_circle
+
+    @pytest.mark.parametrize("pass_max_dist", [True, False])
+    def test_filtering_circumferential_completeness_index(self, pass_max_dist: bool):
+        original_circles = np.array([[0, 0, 0.5]])
+        xy = self._generate_circle_points(original_circles, min_points=100, max_points=100, variance=0)
+        bandwidth = 0.01
+
+        max_dist = None
+        if pass_max_dist:
+            max_dist = bandwidth
+
+        detected_circles, fitting_losses, _ = detect_circles(
+            xy,
+            bandwidth=bandwidth,
+            max_circles=1,
+            min_circumferential_completeness_idx=0.9,
+            circumferential_completeness_idx_max_dist=max_dist,
+            circumferential_completeness_idx_num_regions=int(365 / 5),
+        )
+
+        assert len(detected_circles) == 1
+        assert len(fitting_losses) == 1
+
+        np.testing.assert_almost_equal(original_circles[0], detected_circles[0], decimal=10)
+
+        detected_circles, fitting_losses, _ = detect_circles(
+            xy[:50],
+            bandwidth=bandwidth,
+            max_circles=1,
+            min_circumferential_completeness_idx=0.9,
+            circumferential_completeness_idx_max_dist=max_dist,
+            circumferential_completeness_idx_num_regions=int(365 / 5),
+        )
+
+        assert len(detected_circles) == 0
+        assert len(fitting_losses) == 0
+
+    def test_batch_processing(self):
+        original_circles = np.array([[0, 0, 0.5], [0, 0, 0.52]])
+        xy_1 = self._generate_circle_points(original_circles[:1], min_points=100, max_points=100, variance=0.0)
+        xy_2 = self._generate_circle_points(original_circles[1:], min_points=100, max_points=100, variance=0.0)
+        batch_lengths = np.array([len(xy_1), len(xy_2)], dtype=np.int64)
+        bandwidth = 0.05
+
+        detected_circles, fitting_losses, batch_lengths_circles = detect_circles(
+            np.concatenate((xy_1, xy_2)),
+            bandwidth=bandwidth,
+            batch_lengths=batch_lengths,
+            max_circles=1,
+        )
+
+        num_batches = len(batch_lengths)
+        assert len(detected_circles) == num_batches
+        assert len(fitting_losses) == num_batches
+
+        batch_starts = np.cumsum(np.concatenate((np.array([0]), batch_lengths_circles)))[:-1]
+
+        for batch_idx in range(num_batches):
+            batch_start = batch_starts[batch_idx]
+            batch_end = batch_start + batch_lengths_circles[batch_idx]
+            np.testing.assert_almost_equal(
+                original_circles[batch_idx].reshape(-1, 3), detected_circles[batch_start:batch_end], decimal=5
+            )
+
+    def test_empty_input(self):
+        xy = np.empty((0, 2), dtype=np.float64)
+        bandwidth = 0.05
+        detected_circles, fitting_losses, batch_lengths_circles = detect_circles(xy, bandwidth)
+
+        assert len(detected_circles) == 0
+        assert len(fitting_losses) == 0
+        assert batch_lengths_circles.sum() == 0
 
     @pytest.mark.parametrize(
         "kwargs",
@@ -239,6 +315,8 @@ class TestCircleDetection:
             {"armijo_min_decrease_percentage": -1},
             {"armijo_min_decrease_percentage": 2},
             {"deduplication_precision": -2},
+            {"min_circumferential_completeness_idx": 0.5, "circumferential_completeness_idx_num_regions": None},
+            {"batch_lengths": np.array([], dtype=np.int64)},
         ],
     )
     def test_invalid_parameters(self, kwargs: Dict[str, Any]):
