@@ -39,7 +39,7 @@ def select_top_k_circles(
         fourth contains the indices of the selected circles in the input array.
 
     Raises:
-        ValueError: If :code:`circles` and :code:`fitting_losses` have different lengths or if :code:`batch_lengths: is
+        ValueError: If :code:`circles` and :code:`fitting_losses` have different lengths or if :code:`batch_lengths` is
             not :code:`None` and the length of :code:`circles` is not equal to the sum of :code:`batch_lengths`.
 
     Shape:
