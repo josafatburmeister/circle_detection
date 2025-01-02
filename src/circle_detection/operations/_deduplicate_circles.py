@@ -37,8 +37,8 @@ def deduplicate_circles(
         selected circles in the input array.
 
     Raises:
-        ValueError: If :code:`batch_lengths` is not :code:`None` and the length of :code:`circles` is not equal to the
-            sum of :code:`batch_lengths`.
+        ValueError: If :code:`deduplication_precision` is not a positive number or :code:`batch_lengths` is not
+            :code:`None` and the length of :code:`circles` is not equal to the sum of :code:`batch_lengths`.
 
     Shape:
         - :code:`circles`: :math:`(C, 3)`
@@ -52,6 +52,9 @@ def deduplicate_circles(
         | :math:`C = \text{ number of circles before deduplication}`
         | :math:`C' = \text{ number of circles after deduplication}`
     """
+
+    if deduplication_precision < 0:
+        raise ValueError("deduplication_precision must be a positive number.")
 
     if batch_lengths is not None and len(circles) != batch_lengths.sum():
         raise ValueError("The number of circles must be equal to the sum of batch_lengths.")
