@@ -80,3 +80,10 @@ class TestDeduplicateCircles:
 
         with pytest.raises(ValueError):
             deduplicate_circles(circles, deduplication_precision=1, batch_lengths=batch_lengths)
+
+    def test_invalid_precision(self):
+        circles = np.zeros((2, 3), dtype=np.float64)
+        batch_lengths = np.array([2], dtype=np.int64)
+
+        with pytest.raises(ValueError):
+            deduplicate_circles(circles, deduplication_precision=-1, batch_lengths=batch_lengths)
