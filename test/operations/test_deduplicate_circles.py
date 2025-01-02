@@ -28,10 +28,10 @@ class TestDeduplicateCircles:
         circles = np.array(
             [[0, 0, 1], [1, 0, 1], [0, 0, 1.01], [0, 0, 1], [2, 2, 2], [1, 1, 1], [1, 1, 1]], dtype=np.float64
         )
-        batch_lengths = np.array([4, 3], dtype=np.int64)
+        batch_lengths = np.array([4, 0, 3], dtype=np.int64)
 
         expected_deduplicated_circles = np.array([[0, 0, 1], [1, 0, 1], [1, 1, 1], [2, 2, 2]], dtype=np.float64)
-        expected_deduplicated_batch_lengths = np.array([2, 2], dtype=np.int64)
+        expected_deduplicated_batch_lengths = np.array([2, 0, 2], dtype=np.int64)
 
         deduplication_precision = 1
 
