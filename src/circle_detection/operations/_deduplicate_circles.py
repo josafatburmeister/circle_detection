@@ -73,10 +73,11 @@ def deduplicate_circles(
 
     unique_rounded_circles, selected_indices = np.unique(rounded_circles, return_index=True, axis=0)
 
-    batch_item_borders_mask = np.empty(len(unique_rounded_circles), dtype=np.bool)
+    batch_item_borders_mask = np.empty(len(unique_rounded_circles), dtype=bool)
     batch_item_borders_mask[:1] = True
     batch_item_borders_mask[1:] = unique_rounded_circles[1:, 0] != unique_rounded_circles[:-1, 0]
-    deduplicated_batch_lengths = np.diff(
+    deduplicated_batch_lengths = np.zeros(len(batch_lengths), dtype=np.int64)
+    deduplicated_batch_lengths[batch_lengths > 0] = np.diff(
         np.concatenate(np.nonzero(batch_item_borders_mask) + ([len(batch_item_borders_mask)],))
     )
 
