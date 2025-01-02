@@ -37,7 +37,7 @@ def deduplicate_circles(
         selected circles in the input array.
 
     Raises:
-        ValueError: If :code:`batch_lengths: is not :code:`None` and the length of :code:`circles` is not equal to the
+        ValueError: If :code:`batch_lengths` is not :code:`None` and the length of :code:`circles` is not equal to the
             sum of :code:`batch_lengths`.
 
     Shape:
