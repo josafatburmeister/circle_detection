@@ -63,9 +63,9 @@ def circumferential_completeness_index(
 
     Raises:
         ValueError: If the length of :code:`circles` is not equal to the sum of :code:`batch_lengths_circles`, if
-        the length of :code:`xy` is not equal to the sum of :code:`batch_lengths_xy`, if
-        :code:`batch_lengths_circles` is :code:`None` and :code:`batch_lengths_xy` not (or vice versa), or if
-        :code:`batch_lengths_circles` and :code:`batch_lengths_xy` have different lengths.
+            the length of :code:`xy` is not equal to the sum of :code:`batch_lengths_xy`, if
+            :code:`batch_lengths_circles` is :code:`None` and :code:`batch_lengths_xy` not (or vice versa), or if
+            :code:`batch_lengths_circles` and :code:`batch_lengths_xy` have different lengths.
 
     Shape:
         - :code:`circles`: :math:`(C, 3)`
@@ -142,9 +142,9 @@ def filter_circumferential_completeness_index(
 
     Raises:
         ValueError: If the length of :code:`circles` is not equal to the sum of :code:`batch_lengths_circles`, if
-        the length of :code:`xy` is not equal to the sum of :code:`batch_lengths_xy`, if
-        :code:`batch_lengths_circles` is :code:`None` and :code:`batch_lengths_xy` not (or vice versa), or if
-        :code:`batch_lengths_circles` and :code:`batch_lengths_xy` have different lengths.
+            the length of :code:`xy` is not equal to the sum of :code:`batch_lengths_xy`, if
+            :code:`batch_lengths_circles` is :code:`None` and :code:`batch_lengths_xy` not (or vice versa), or if
+            :code:`batch_lengths_circles` and :code:`batch_lengths_xy` have different lengths.
 
     Shape:
         - :code:`circles`: :math:`(C, 3)`
