@@ -15,7 +15,8 @@ using ArrayXl = Eigen::Array<int64_t, Eigen::Dynamic, 1>;
 namespace CircleDetection {
 
 ArrayXd circumferential_completeness_index(ArrayX3d circles, ArrayX2d xy, ArrayXl batch_lengths_circles,
-                                           ArrayXl batch_lengths_xy, int64_t num_regions, double max_dist) {
+                                           ArrayXl batch_lengths_xy, int64_t num_regions, double max_dist,
+                                           int num_workers = 1) {
   if (batch_lengths_circles.rows() != batch_lengths_xy.rows()) {
     throw std::invalid_argument("The length of batch_lengths_circles and batch_lengths_xy must be equal.");
   }
@@ -24,6 +25,10 @@ ArrayXd circumferential_completeness_index(ArrayX3d circles, ArrayX2d xy, ArrayX
   }
   if (xy.rows() != batch_lengths_xy.sum()) {
     throw std::invalid_argument("The number of points must be equal to the sum of batch_lengths_xy.");
+  }
+
+  if (num_workers <= 0) {
+    num_workers = omp_get_max_threads();
   }
 
   constexpr double PI = 3.14159265358979311600;
@@ -47,7 +52,7 @@ ArrayXd circumferential_completeness_index(ArrayX3d circles, ArrayX2d xy, ArrayX
     batch_start_xy += batch_lengths_xy(batch_idx);
   }
 
-#pragma omp parallel for default(shared)
+#pragma omp parallel for default(shared) num_threads(num_workers)
   for (int64_t idx = 0; idx < circles.rows(); ++idx) {
     int64_t batch_idx = batch_indices(idx);
     ArrayXd circle = circles(idx, Eigen::all);
@@ -93,9 +98,9 @@ ArrayXd circumferential_completeness_index(ArrayX3d circles, ArrayX2d xy, ArrayX
 
 std::tuple<ArrayX3d, ArrayXl, ArrayXl> filter_circumferential_completeness_index(
     ArrayX3d circles, ArrayX2d xy, ArrayXl batch_lengths_circles, ArrayXl batch_lengths_xy, int64_t num_regions,
-    double max_dist, double min_circumferential_completeness_index) {
-  ArrayXd circumferential_completeness_indices =
-      circumferential_completeness_index(circles, xy, batch_lengths_circles, batch_lengths_xy, num_regions, max_dist);
+    double max_dist, double min_circumferential_completeness_index, int num_workers = 1) {
+  ArrayXd circumferential_completeness_indices = circumferential_completeness_index(
+      circles, xy, batch_lengths_circles, batch_lengths_xy, num_regions, max_dist, num_workers);
   int64_t num_batches = batch_lengths_circles.size();
 
   std::vector<int64_t> filtered_indices = {};
@@ -122,13 +127,17 @@ std::tuple<ArrayX3d, ArrayXl, ArrayXl> filter_circumferential_completeness_index
 }
 
 std::tuple<ArrayX3d, ArrayXd, ArrayXl, ArrayXl> non_maximum_suppression(ArrayX3d circles, ArrayXd fitting_losses,
-                                                                        ArrayXl batch_lengths) {
+                                                                        ArrayXl batch_lengths, int num_workers = 1) {
   if (circles.rows() != fitting_losses.rows()) {
     throw std::invalid_argument("circles and fitting_losses must have the same number of entries.");
   }
 
   if (circles.rows() != batch_lengths.sum()) {
     throw std::invalid_argument("The number of circles must be equal to the sum of batch_lengths.");
+  }
+
+  if (num_workers <= 0) {
+    num_workers = omp_get_max_threads();
   }
 
   int64_t num_batches = batch_lengths.rows();
@@ -145,7 +154,7 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl, ArrayXl> non_maximum_suppression(ArrayX3d
   ArrayXl new_batch_lengths = ArrayXl::Constant(num_batches, 0);
   ArrayXl new_batch_starts = ArrayXl::Constant(num_batches, 0);
 
-#pragma omp parallel for default(shared)
+#pragma omp parallel for default(shared) num_threads(num_workers)
   for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     int64_t batch_start = batch_starts(batch_idx);
     int64_t num_circles = circles(seqN(batch_start, batch_lengths(batch_idx)), Eigen::all).rows();
@@ -190,7 +199,7 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl, ArrayXl> non_maximum_suppression(ArrayX3d
     batch_start += new_batch_lengths(batch_idx);
   }
 
-#pragma omp parallel for default(shared)
+#pragma omp parallel for default(shared) num_threads(num_workers)
   for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     selected_circles(seqN(new_batch_starts(batch_idx), new_batch_lengths(batch_idx)), Eigen::all) =
         circles(selected_indices[batch_idx], Eigen::all);

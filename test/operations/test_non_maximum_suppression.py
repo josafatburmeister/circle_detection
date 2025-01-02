@@ -1,5 +1,8 @@
 """ Tests for :code:`circle_detection.operations.non_maximum_suppression`. """
 
+import multiprocessing
+import time
+
 import numpy as np
 import pytest
 
@@ -59,6 +62,29 @@ class TestNonMaximumSuppression:
         np.testing.assert_array_equal(expected_filtered_fitting_losses, filtered_fitting_losses)
         np.testing.assert_array_equal(expected_filtered_batch_lengths, filtered_batch_lengths)
         np.testing.assert_array_equal(filtered_circles, circles[selected_indices])
+
+    @pytest.mark.skipif(multiprocessing.cpu_count() <= 1, reason="Testing of multi-threading requires multiple cores.")
+    def test_multi_threading(self):
+        batch_size = 30000
+        circles = np.array([[[0, 0, 1], [0, 0, 0.9]]], dtype=np.float64)
+        circles = np.repeat(circles, batch_size, axis=0).reshape(-1, 3)
+        fitting_losses = np.array([-5, -4], dtype=np.float64)
+        fitting_losses = np.tile(fitting_losses, batch_size)
+        batch_lengths = np.array([2] * batch_size, dtype=np.int64)
+
+        single_threaded_runtime = 0
+        multi_threaded_runtime = 0
+
+        repetitions = 4
+        for _ in range(repetitions):
+            start = time.time()
+            non_maximum_suppression(circles, fitting_losses, batch_lengths, num_workers=1)
+            single_threaded_runtime += time.time() - start
+            start = time.time()
+            non_maximum_suppression(circles, fitting_losses, batch_lengths, num_workers=-1)
+            multi_threaded_runtime += time.time() - start
+
+        assert multi_threaded_runtime < single_threaded_runtime
 
     def test_invalid_inputs(self):
         circles = np.zeros((4, 3), dtype=np.float64)

@@ -1,5 +1,7 @@
 """ Tests for :code:`circle_detection.detect_circles`. """
 
+import multiprocessing
+import time
 from typing import Any, Dict, Union
 
 import numpy as np
@@ -145,7 +147,9 @@ class TestCircleDetection:
         )
         bandwidth = 0.07
 
-        detected_circles, fitting_losses, batch_lengths_circles = detect_circles(xy, bandwidth=bandwidth, max_circles=1)
+        detected_circles, fitting_losses, batch_lengths_circles = detect_circles(
+            xy, bandwidth=bandwidth, max_circles=1, num_workers=-1
+        )
 
         assert len(detected_circles) == 1
         assert len(fitting_losses) == 1
@@ -155,7 +159,7 @@ class TestCircleDetection:
         np.testing.assert_almost_equal(original_circles[0], detected_circles[0], decimal=10)
 
         detected_circles, fitting_losses, batch_lengths_circles = detect_circles(
-            xy, bandwidth=bandwidth, max_circles=2, non_maximum_suppression=True
+            xy, bandwidth=bandwidth, max_circles=2, non_maximum_suppression=True, num_workers=-1
         )
 
         assert len(detected_circles) == 2
@@ -206,6 +210,7 @@ class TestCircleDetection:
             deduplication_precision=3,
             non_maximum_suppression=True,
             min_fitting_score=5,
+            num_workers=-1,
         )
 
         assert len(original_circles) == len(detected_circles)
@@ -238,6 +243,7 @@ class TestCircleDetection:
             min_circumferential_completeness_idx=0.9,
             circumferential_completeness_idx_max_dist=max_dist,
             circumferential_completeness_idx_num_regions=int(365 / 5),
+            num_workers=-1,
         )
 
         assert len(detected_circles) == 1
@@ -252,6 +258,7 @@ class TestCircleDetection:
             min_circumferential_completeness_idx=0.9,
             circumferential_completeness_idx_max_dist=max_dist,
             circumferential_completeness_idx_num_regions=int(365 / 5),
+            num_workers=-1,
         )
 
         assert len(detected_circles) == 0
@@ -269,6 +276,7 @@ class TestCircleDetection:
             bandwidth=bandwidth,
             batch_lengths=batch_lengths,
             max_circles=1,
+            num_workers=-1,
         )
 
         num_batches = len(batch_lengths)
@@ -283,6 +291,40 @@ class TestCircleDetection:
             np.testing.assert_almost_equal(
                 original_circles[batch_idx].reshape(-1, 3), detected_circles[batch_start:batch_end], decimal=5
             )
+
+    @pytest.mark.skipif(multiprocessing.cpu_count() <= 1, reason="Testing of multi-threading requires multiple cores.")
+    def test_multi_threading(self):
+        original_circles = np.array([[0, 0, 0.5], [0, 0, 0.52]])
+        xy_1 = self._generate_circle_points(original_circles[:1], min_points=100, max_points=100, variance=0.0)
+        xy_2 = self._generate_circle_points(original_circles[1:], min_points=100, max_points=100, variance=0.0)
+        batch_lengths = np.array([len(xy_1), len(xy_2)], dtype=np.int64)
+        bandwidth = 0.05
+
+        single_threaded_runtime = 0
+        multi_threaded_runtime = 0
+
+        repetitions = 4
+        for _ in range(repetitions):
+            start = time.time()
+            detect_circles(
+                np.concatenate((xy_1, xy_2)),
+                bandwidth=bandwidth,
+                batch_lengths=batch_lengths,
+                max_circles=1,
+                num_workers=1,
+            )
+            single_threaded_runtime += time.time() - start
+            start = time.time()
+            detect_circles(
+                np.concatenate((xy_1, xy_2)),
+                bandwidth=bandwidth,
+                batch_lengths=batch_lengths,
+                max_circles=1,
+                num_workers=-1,
+            )
+            multi_threaded_runtime += time.time() - start
+
+        assert multi_threaded_runtime < single_threaded_runtime
 
     def test_empty_input(self):
         xy = np.empty((0, 2), dtype=np.float64)

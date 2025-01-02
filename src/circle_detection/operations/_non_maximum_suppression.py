@@ -16,6 +16,7 @@ def non_maximum_suppression(
     circles: npt.NDArray[np.float64],
     fitting_losses: npt.NDArray[np.float64],
     batch_lengths: Optional[npt.NDArray[np.int64]] = None,
+    num_workers: int = 1,
 ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.int64], npt.NDArray[np.int64]]:
     r"""
     Non-maximum suppression operation to remove overlapping circles. If a circle overlaps with other circles, it is
@@ -34,6 +35,8 @@ def non_maximum_suppression(
             contain the circles of the first batch item and :code:`circles[N_1:]` the circles of the second batch item.
             If :code:`batch_lengths` is set to :code:`None`, it is assumed that the input circles belong to a single
             batch item and batch processing is disabled. Defaults to :code:`None`.
+        num_workers: Number of workers threads to use for parallel processing. If set to -1, all CPU threads are used.
+            Defaults to 1.
 
     Returns:
         : Tuple of four arrays. The first contains the parameters of the circles remaining after non-maximum
@@ -60,4 +63,4 @@ def non_maximum_suppression(
     if batch_lengths is None:
         batch_lengths = np.array([len(circles)], dtype=np.int64)
 
-    return non_maximum_suppression_cpp(circles, fitting_losses, batch_lengths)
+    return non_maximum_suppression_cpp(circles, fitting_losses, batch_lengths, int(num_workers))

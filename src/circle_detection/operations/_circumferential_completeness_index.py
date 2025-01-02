@@ -23,6 +23,7 @@ def circumferential_completeness_index(
     max_dist: Optional[float] = None,
     batch_lengths_circles: Optional[npt.NDArray[np.int64]] = None,
     batch_lengths_xy: Optional[npt.NDArray[np.int64]] = None,
+    num_workers: int = 1,
 ) -> npt.NDArray[np.float64]:
     r"""
     Calculates the circumferential completeness indices of the specified circles. The circumferential completeness index
@@ -57,6 +58,8 @@ def circumferential_completeness_index(
             expected that all points belonging to the same batch item are stored consecutively in the :code:`xy`
             input array. If :code:`batch_lengths_xy` is set to :code:`None`, it is assumed that the input points
             belong to a single batch item and batch processing is disabled. Defaults to :code:`None`.
+        num_workers: Number of workers threads to use for parallel processing. If set to -1, all CPU threads are used.
+            Defaults to 1.
 
     Returns:
         Circumferential completeness indices of the circles.
@@ -94,7 +97,7 @@ def circumferential_completeness_index(
         max_dist = -1
 
     return circumferential_completeness_index_cpp(
-        circles, xy, batch_lengths_circles, batch_lengths_xy, int(num_regions), float(max_dist)
+        circles, xy, batch_lengths_circles, batch_lengths_xy, int(num_regions), float(max_dist), int(num_workers)
     )
 
 
@@ -106,6 +109,7 @@ def filter_circumferential_completeness_index(
     max_dist: Optional[float] = None,
     batch_lengths_circles: Optional[npt.NDArray[np.int64]] = None,
     batch_lengths_xy: Optional[npt.NDArray[np.int64]] = None,
+    num_workers: int = 1,
 ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.int64], npt.NDArray[np.int64]]:
     r"""
     Filters out the circles whose circumferential completeness index is below the specified minimum circumferential
@@ -134,6 +138,8 @@ def filter_circumferential_completeness_index(
             expected that all points belonging to the same batch item are stored consecutively in the :code:`xy`
             input array. If :code:`batch_lengths_xy` is set to :code:`None`, it is assumed that the input points
             belong to a single batch item and batch processing is disabled. Defaults to :code:`None`.
+        num_workers: Number of workers threads to use for parallel processing. If set to -1, all CPU threads are used.
+            Defaults to 1.
 
     Returns:
         : Tuple of three arrays. The first contains the parameters of the circles remaining after filtering.
@@ -179,4 +185,5 @@ def filter_circumferential_completeness_index(
         int(num_regions),
         float(max_dist),
         float(min_circumferential_completeness_index),
+        int(num_workers),
     )
