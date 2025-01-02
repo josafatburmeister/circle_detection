@@ -2,6 +2,7 @@
 
 #include <Eigen/Dense>
 #include <cmath>
+#include <cstdint>
 #include <iostream>
 #include <tuple>
 #include <vector>
@@ -10,7 +11,7 @@ namespace {
 
 using namespace Eigen;
 using ArrayXb = Eigen::Array<bool, Eigen::Dynamic, 1>;
-using ArrayXl = Eigen::Array<long, Eigen::Dynamic, 1>;
+using ArrayXl = Eigen::Array<int64_t, Eigen::Dynamic, 1>;
 
 double loss_fn_scalar(double scaled_residual) {
   const double SQRT_2_PI = 2.5066282746310002;
@@ -27,35 +28,42 @@ double loss_fn_derivative_2_scalar(double scaled_residual) {
 }  // namespace
 
 namespace CircleDetection {
-std::tuple<std::vector<ArrayX3d>, std::vector<ArrayXd>> detect_circles(
-    ArrayX2d xy, std::vector<std::vector<int64_t>> batch_indices, double bandwidth, ArrayXd min_start_x,
-    ArrayXd max_start_x, int n_start_x, ArrayXd min_start_y, ArrayXd max_start_y, int n_start_y,
-    ArrayXd min_start_radius, ArrayXd max_start_radius, int n_start_radius, ArrayXd break_min_x, ArrayXd break_max_x,
-    ArrayXd break_min_y, ArrayXd break_max_y, ArrayXd break_min_radius, ArrayXd break_max_radius,
-    double break_min_change = 1e-5, int max_iterations = 1000, double acceleration_factor = 1.6,
-    double armijo_attenuation_factor = 0.7, double armijo_min_decrease_percentage = 0.5, double min_step_size = 1e-20,
-    double min_fitting_score = 1e-6) {
-  auto n_batches = batch_indices.size() > 0 ? batch_indices.size() : 1;
+std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
+    ArrayX2d xy, ArrayXl batch_lengths, double bandwidth, ArrayXd min_start_x, ArrayXd max_start_x, int n_start_x,
+    ArrayXd min_start_y, ArrayXd max_start_y, int n_start_y, ArrayXd min_start_radius, ArrayXd max_start_radius,
+    int n_start_radius, ArrayXd break_min_x, ArrayXd break_max_x, ArrayXd break_min_y, ArrayXd break_max_y,
+    ArrayXd break_min_radius, ArrayXd break_max_radius, double break_min_change = 1e-5, int max_iterations = 1000,
+    double acceleration_factor = 1.6, double armijo_attenuation_factor = 0.7,
+    double armijo_min_decrease_percentage = 0.5, double min_step_size = 1e-20, double min_fitting_score = 1e-6) {
+  auto num_batches = batch_lengths.rows();
 
-  ArrayXd start_radii(n_batches * n_start_radius);
-  ArrayXd start_centers_x(n_batches * n_start_x);
-  ArrayXd start_centers_y(n_batches * n_start_y);
+  ArrayXl batch_starts(num_batches);
 
-#pragma omp parallel for
-  for (int64_t i = 0; i < n_batches; ++i) {
-    start_radii.segment(i * n_start_radius, n_start_radius) =
-        ArrayXd::LinSpaced(n_start_radius, min_start_radius(i), max_start_radius(i));
-    start_centers_x.segment(i * n_start_x, n_start_x) = ArrayXd::LinSpaced(n_start_x, min_start_x(i), max_start_x(i));
-    start_centers_y.segment(i * n_start_y, n_start_y) = ArrayXd::LinSpaced(n_start_y, min_start_y(i), max_start_y(i));
+  int64_t batch_start = 0;
+  for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
+    batch_starts(batch_idx) = batch_start;
+    batch_start += batch_lengths(batch_idx);
   }
 
-  ArrayX3d fitted_circles = ArrayX3d::Constant(n_batches * n_start_radius * n_start_x * n_start_y, 3, -1);
-  ArrayXb fitting_converged = ArrayXb::Zero(n_batches * n_start_radius * n_start_x * n_start_y);
-  ArrayXd fitting_losses = ArrayXd::Constant(n_batches * n_start_radius * n_start_x * n_start_y, 0);
+  ArrayXd start_radii(num_batches * n_start_radius);
+  ArrayXd start_centers_x(num_batches * n_start_x);
+  ArrayXd start_centers_y(num_batches * n_start_y);
+
+#pragma omp parallel for
+  for (int64_t i = 0; i < num_batches; ++i) {
+    start_radii.segment(i * n_start_radius, n_start_radius) =
+        ArrayXd::LinSpaced(n_start_radius, min_start_radius(i), max_start_radius(i));
+    start_centers_x(seqN(i * n_start_x, n_start_x)) = ArrayXd::LinSpaced(n_start_x, min_start_x(i), max_start_x(i));
+    start_centers_y(seqN(i * n_start_y, n_start_y)) = ArrayXd::LinSpaced(n_start_y, min_start_y(i), max_start_y(i));
+  }
+
+  ArrayX3d fitted_circles = ArrayX3d::Constant(num_batches * n_start_radius * n_start_x * n_start_y, 3, -1);
+  ArrayXb fitting_converged = ArrayXb::Zero(num_batches * n_start_radius * n_start_x * n_start_y);
+  ArrayXd fitting_losses = ArrayXd::Constant(num_batches * n_start_radius * n_start_x * n_start_y, 0);
 
 #pragma omp parallel
 #pragma omp single
-  for (int64_t idx_batch = 0; idx_batch < n_batches; ++idx_batch) {
+  for (int64_t idx_batch = 0; idx_batch < num_batches; ++idx_batch) {
     for (int64_t idx_x = 0; idx_x < n_start_x; ++idx_x) {
       for (int64_t idx_y = 0; idx_y < n_start_y; ++idx_y) {
         for (int64_t idx_radius = 0; idx_radius < n_start_radius; ++idx_radius) {
@@ -68,15 +76,15 @@ std::tuple<std::vector<ArrayX3d>, std::vector<ArrayXd>> detect_circles(
           if (min_start_radius(idx_batch) == max_start_radius(idx_batch) && idx_radius > 0) {
             continue;
           }
-          if (batch_indices.size() > 0 && batch_indices[idx_batch].size() < 3) {
+          if (batch_lengths(idx_batch) < 3) {
             continue;
           }
 
 #pragma omp task
           {
             ArrayX2d current_xy;
-            if (n_batches > 1) {
-              current_xy = xy(batch_indices[idx_batch], Eigen::all);
+            if (num_batches > 1) {
+              current_xy = xy(seqN(batch_starts(idx_batch), batch_lengths(idx_batch)), Eigen::all);
             } else {
               current_xy = xy;
             }
@@ -262,22 +270,18 @@ std::tuple<std::vector<ArrayX3d>, std::vector<ArrayXd>> detect_circles(
 
 #pragma omp taskwait
 
-  std::vector<ArrayX3d> converged_circles;
-  std::vector<ArrayXd> converged_fitting_losses;
+  ArrayXl batch_lengths_circles = ArrayXl::Constant(num_batches, 0);
+  std::vector<int64_t> converged_indices;
 
-  for (int64_t i = 0; i < n_batches; ++i) {
-    std::vector<int64_t> converged_indices{};
-    int64_t n_circles = n_start_x * n_start_y * n_start_radius;
-    for (int64_t j = 0; j < n_circles; ++j) {
-      auto idx = i * n_circles + j;
-      if (fitting_converged[idx]) {
-        converged_indices.push_back(idx);
-      }
+  for (int64_t i = 0; i < fitted_circles.rows(); ++i) {
+    if (fitting_converged[i]) {
+      converged_indices.push_back(i);
+      batch_lengths_circles(i / (n_start_x * n_start_y * n_start_radius)) += 1;
     }
-    converged_circles.push_back(fitted_circles(converged_indices, Eigen::all));
-    converged_fitting_losses.push_back(fitting_losses(converged_indices));
   }
-  return std::make_tuple(converged_circles, converged_fitting_losses);
+
+  return std::make_tuple(fitted_circles(converged_indices, Eigen::all), fitting_losses(converged_indices),
+                         batch_lengths_circles);
 }
 
 }  // namespace CircleDetection
