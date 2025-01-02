@@ -307,7 +307,7 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
 
     Shape:
         - :code:`xy`: :math:`(N, 2)`
-        - :code:`batch_indices`: list of length :math:`B` where each list element is an array of shape :math:`(N_i)`
+        - :code:`batch_lengths`: :math:`(B)`
         - :code:`min_start_x`: scalar or array of shape :math:`(B)`
         - :code:`max_start_x`: scalar or array of shape :math:`(B)`
         - :code:`max_start_y`: scalar or array of shape :math:`(B)`
@@ -320,18 +320,14 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
         - :code:`break_max_y`: scalar or array of shape :math:`(B)`
         - :code:`break_min_radius`: scalar or array of shape :math:`(B)`
         - :code:`break_max_radius`: scalar or array of shape :math:`(B)`
-        - Output: If :code:`batch_indices` is not :code:`None`, two lists of length :math:`B` are returned. In the
-          first list, each element is an array of shape :math:`(C_i, 3)`, and in the second list each element is an
-          array of shape :math:`(C_i)`. If :code:`batch_indices` is :code:`None`, the output is an tuple of two arrays,
-          where the first array has shape :math:`(C, 3)` and the second array has shape :math:`(C)`.
+        - Output: The first array in the output tuple has shape :math:`(C, 3)`, the second shape :math:`(C)`, and the
+          third shape :math:`(B)`.
 
         | where
         |
         | :math:`B = \text{ batch size}`
         | :math:`N = \text{ number of points}`
-        | :math:`N_i = \text{ number of points belonging to the i-th batch item}`
         | :math:`C = \text{ number of detected circles}`
-        | :math:`C_i = \text{ number of circles detected for the i-th batch item}`
     """
     if batch_lengths is None:
         batch_lengths = np.array([len(xy)], dtype=np.int64)
