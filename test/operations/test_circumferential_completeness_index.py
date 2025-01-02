@@ -1,5 +1,7 @@
 """ Tests for :code:`circle_detection.operations.circumferential_completeness_index`. """
 
+import multiprocessing
+import time
 from typing import Optional
 
 import numpy as np
@@ -88,6 +90,37 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
         np.testing.assert_array_equal(expected_filtered_circles, filtered_circles)
         np.testing.assert_array_equal(expected_filtered_batch_lengths_circles, filtered_batch_lengths_circles)
         np.testing.assert_array_equal(filtered_circles, circles[selected_indices])
+
+    @pytest.mark.skipif(multiprocessing.cpu_count() <= 1, reason="Testing of multi-threading requires multiple cores.")
+    def test_multi_threading(self):
+        batch_size = 1000
+        circles = np.array([[[0, 0, 1], [5, 0, 1]]], dtype=np.float64)
+        circles = np.repeat(circles, batch_size, axis=0).reshape(-1, 3)
+        xy = np.array([[[0, 1], [0, -1], [1, 0], [-1, 0], [5, 1], [5, -1]]], dtype=np.float64)
+        xy = np.repeat(xy, batch_size, axis=0).reshape(-1, 2)
+        batch_lengths_circles = np.array([2] * batch_size, dtype=np.int64)
+        batch_lengths_xy = np.array([6] * batch_size, dtype=np.int64)
+
+        max_dist = 0.1
+        num_regions = 4
+
+        single_threaded_runtime = 0
+        multi_threaded_runtime = 0
+
+        repetitions = 4
+        for _ in range(repetitions):
+            start = time.time()
+            circumferential_completeness_index(
+                circles, xy, num_regions, max_dist, batch_lengths_circles, batch_lengths_xy, num_workers=1
+            )
+            single_threaded_runtime += time.time() - start
+            start = time.time()
+            circumferential_completeness_index(
+                circles, xy, num_regions, max_dist, batch_lengths_circles, batch_lengths_xy, num_workers=-1
+            )
+            multi_threaded_runtime += time.time() - start
+
+        assert multi_threaded_runtime < single_threaded_runtime
 
     def test_invalid_batch_lengths_circles(self):
         circles = np.zeros((4, 3), dtype=np.float64)

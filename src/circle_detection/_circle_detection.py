@@ -49,6 +49,7 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
     circumferential_completeness_idx_max_dist: Optional[float] = None,
     circumferential_completeness_idx_num_regions: Optional[int] = None,
     non_maximum_suppression: bool = True,
+    num_workers: int = 1,
 ) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.int64]]:
     r"""
     Detects circles in a set of 2D points using the M-estimator method proposed in `Garlipp, Tim, and Christine
@@ -274,6 +275,8 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
         non_maximum_suppression: Whether non-maximum suppression should be applied to the detected circles. If this
             option is enabled, circles that overlap with other circles, are only kept if they have the lowest fitting
             loss among the circles with which they overlap. Defaults to :code:`True`.
+        num_workers: Number of workers threads to use for parallel processing. If set to -1, all CPU threads are used.
+            Defaults to 1.
 
     Returns:
         : Tuple of three arrays. The first array contains the parameters of the detected circles (in the following
@@ -518,6 +521,7 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
         float(armijo_min_decrease_percentage),
         float(min_step_size),
         float(min_fitting_score),
+        int(num_workers),
     )
 
     detected_circles, batch_lengths_circles, selected_indices = deduplicate_circles(
@@ -527,7 +531,7 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
 
     if non_maximum_suppression and (max_circles is None or max_circles > 1):
         detected_circles, fitting_losses, batch_lengths_circles, _ = non_maximum_suppression_op(
-            detected_circles, fitting_losses, batch_lengths_circles
+            detected_circles, fitting_losses, batch_lengths_circles, num_workers=num_workers
         )
 
     if min_circumferential_completeness_idx is not None:
@@ -541,6 +545,7 @@ def detect_circles(  # pylint: disable=too-many-arguments, too-many-positional-a
             max_dist=circumferential_completeness_idx_max_dist,
             batch_lengths_circles=batch_lengths_circles,
             batch_lengths_xy=batch_lengths,
+            num_workers=num_workers,
         )
         fitting_losses = fitting_losses[selected_indices]
 

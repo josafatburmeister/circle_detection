@@ -34,7 +34,12 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
     int n_start_radius, ArrayXd break_min_x, ArrayXd break_max_x, ArrayXd break_min_y, ArrayXd break_max_y,
     ArrayXd break_min_radius, ArrayXd break_max_radius, double break_min_change = 1e-5, int max_iterations = 1000,
     double acceleration_factor = 1.6, double armijo_attenuation_factor = 0.7,
-    double armijo_min_decrease_percentage = 0.5, double min_step_size = 1e-20, double min_fitting_score = 1e-6) {
+    double armijo_min_decrease_percentage = 0.5, double min_step_size = 1e-20, double min_fitting_score = 1e-6,
+    int num_workers = 1) {
+  if (num_workers <= 0) {
+    num_workers = omp_get_max_threads();
+  }
+
   auto num_batches = batch_lengths.rows();
 
   ArrayXl batch_starts(num_batches);
@@ -49,7 +54,7 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
   ArrayXd start_centers_x(num_batches * n_start_x);
   ArrayXd start_centers_y(num_batches * n_start_y);
 
-#pragma omp parallel for
+#pragma omp parallel for num_threads(num_workers)
   for (int64_t i = 0; i < num_batches; ++i) {
     start_radii.segment(i * n_start_radius, n_start_radius) =
         ArrayXd::LinSpaced(n_start_radius, min_start_radius(i), max_start_radius(i));
@@ -61,7 +66,7 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
   ArrayXb fitting_converged = ArrayXb::Zero(num_batches * n_start_radius * n_start_x * n_start_y);
   ArrayXd fitting_losses = ArrayXd::Constant(num_batches * n_start_radius * n_start_x * n_start_y, 0);
 
-#pragma omp parallel
+#pragma omp parallel num_threads(num_workers)
 #pragma omp single
   for (int64_t idx_batch = 0; idx_batch < num_batches; ++idx_batch) {
     for (int64_t idx_x = 0; idx_x < n_start_x; ++idx_x) {
