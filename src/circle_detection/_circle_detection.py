@@ -354,7 +354,6 @@ class CircleDetection:  # pylint: disable=too-many-instance-attributes
             |
             | :math:`B = \text{ batch size}`
             | :math:`N = \text{ number of points}`
-            | :math:`C = \text{ number of detected circles}`
         """
 
         if batch_lengths is None:
@@ -582,8 +581,8 @@ class CircleDetection:  # pylint: disable=too-many-instance-attributes
 
         Raises:
             ValueError: if this method is called before calling :code:`self.detect()` or if
-            :code:`min_circumferential_completeness_idx` is not :code:`None` and
-            :code:`circumferential_completeness_idx_num_regions` is :code:`None`.
+                :code:`min_circumferential_completeness_idx` is not :code:`None` and
+                :code:`circumferential_completeness_idx_num_regions` is :code:`None`.
         """
 
         if min_circumferential_completeness_idx is not None and circumferential_completeness_idx_num_regions is None:
