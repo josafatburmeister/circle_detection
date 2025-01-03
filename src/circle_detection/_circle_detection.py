@@ -432,9 +432,9 @@ class CircleDetection:  # pylint: disable=too-many-instance-attributes
             max_start_y = np.full(num_batches, fill_value=max_start_y, dtype=np.float64)
         max_start_y = cast(npt.NDArray[np.float64], max_start_y)
 
-        if break_max_y is None:
+        if break_min_y is None:
             break_min_y = min_start_y
-        elif not isinstance(break_max_y, np.ndarray):
+        elif not isinstance(break_min_y, np.ndarray):
             break_min_y = np.full(num_batches, fill_value=break_min_y, dtype=np.float64)
         break_min_y = cast(npt.NDArray[np.float64], break_min_y)
 
@@ -462,7 +462,6 @@ class CircleDetection:  # pylint: disable=too-many-instance-attributes
                     for (batch_start, batch_end) in zip(batch_starts, batch_ends)
                 ]
             )
-            max_start_radius = np.full(num_batches, fill_value=max_start_radius, dtype=np.float64)
         elif not isinstance(max_start_radius, np.ndarray):
             max_start_radius = np.full(num_batches, fill_value=max_start_radius, dtype=np.float64)
         max_start_radius = cast(npt.NDArray[np.float64], max_start_radius)
