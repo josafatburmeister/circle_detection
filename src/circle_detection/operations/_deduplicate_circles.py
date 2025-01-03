@@ -67,7 +67,7 @@ def deduplicate_circles(
         return circles[selected_indices], np.array([len(unique_rounded_circles)], dtype=np.int64), selected_indices
 
     # add batch indices as first dimension to separate circles from different batch items
-    rounded_circles = np.empty((len(circles), 4), dtype=np.int64)
+    rounded_circles = np.empty((len(circles), 4), dtype=np.float64)
     rounded_circles[:, 0] = np.repeat(np.arange(len(batch_lengths), dtype=np.float64), batch_lengths)
     rounded_circles[:, 1:] = np.round(circles, decimals=deduplication_precision)
 

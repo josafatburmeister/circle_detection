@@ -61,9 +61,9 @@ class TestDeduplicateCircles:
         np.testing.assert_array_equal(expected_deduplicated_batch_lengths, deduplicated_batch_lengths)
 
     @pytest.mark.parametrize("deduplication_precision", [1, 4])
-    def test_rounding_precision(self, deduplication_precision: int):
-        circles = np.array([[0, 0, 1], [0.0001, 0.0001, 0.9999]], dtype=np.float64)
-        batch_lengths = np.array([2], dtype=np.int64)
+    def test_rounding_precision_single_batch_item(self, deduplication_precision: int):
+        circles = np.array([[0, 0, 1], [0.0001, 0.0001, 0.9999], [0, 0, 1.001]], dtype=np.float64)
+        batch_lengths = np.array([3], dtype=np.int64)
 
         deduplicated_circles, _, _ = deduplicate_circles(
             circles, deduplication_precision=deduplication_precision, batch_lengths=batch_lengths
@@ -71,6 +71,22 @@ class TestDeduplicateCircles:
 
         if deduplication_precision < 4:
             assert len(deduplicated_circles) == 1
+        else:
+            assert len(deduplicated_circles) == len(circles)
+
+    @pytest.mark.parametrize("deduplication_precision", [1, 4])
+    def test_rounding_precision_batch_processing(self, deduplication_precision: int):
+        batch_size = 2
+        circles = np.array([[[0, 0, 1], [0.0001, 0.0001, 0.9999], [0, 0, 1.001]]], dtype=np.float64)
+        circles = np.repeat(circles, batch_size, axis=0).reshape(-1, 3)
+        batch_lengths = np.array([3] * batch_size, dtype=np.int64)
+
+        deduplicated_circles, _, _ = deduplicate_circles(
+            circles, deduplication_precision=deduplication_precision, batch_lengths=batch_lengths
+        )
+
+        if deduplication_precision < 4:
+            assert len(deduplicated_circles) == batch_size
         else:
             assert len(deduplicated_circles) == len(circles)
 
