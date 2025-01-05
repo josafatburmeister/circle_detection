@@ -34,8 +34,8 @@ def circumferential_completeness_index(
     divided into :code:`num_regions` angular regions. An angular region is considered complete if it contains at least
     one point whose distance to the circle outline is equal to or less than :code:`max_dist`. The circumferential
     completeness index is then defined as the proportion of angular regions that are complete. This method supports
-    batch processing, i.e. separate sets of circles (i.e., different batch items) can be processed in parallel. For this
-    purpose, :code:`batch_lengths_circles` and :code:`batch_lengths_xy` must be set to specify which circle / which
+    batch processing, i.e., separate sets of circles (i.e., different batch items) can be processed in parallel. For
+    this purpose, :code:`batch_lengths_circles` and :code:`batch_lengths_xy` must be set to specify which circle / which
     point belongs to which set.
 
     Args:
