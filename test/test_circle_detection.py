@@ -343,6 +343,7 @@ class TestCircleDetection:
             {"armijo_attenuation_factor": 2},
             {"armijo_min_decrease_percentage": -1},
             {"armijo_min_decrease_percentage": 2},
+            {"min_step_size": 0.01, "break_min_change": 0.001},
         ],
     )
     def test_invalid_constructor_parameters(self, kwargs: Dict[str, Any]):
