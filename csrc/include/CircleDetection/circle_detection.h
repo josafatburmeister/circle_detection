@@ -53,6 +53,7 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
   ArrayXd start_radii(num_batches * n_start_radius);
   ArrayXd start_centers_x(num_batches * n_start_x);
   ArrayXd start_centers_y(num_batches * n_start_y);
+  double eps = 0.01 * min_step_size;
 
 #pragma omp parallel for num_threads(num_workers)
   for (int64_t i = 0; i < num_batches; ++i) {
@@ -212,16 +213,16 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
 
               // step size attenuation according to Armijo's rule
               // if acceleration was successfull, the attenuation is skipped
-              // if acceleration was not successfull, the stpe size is still 1
+              // if acceleration was not successfull, the step size is still 1
               if (step_size == 1) {
-                // to avoid initializing all variables of the while loop before, actual_loss_diff is set to 1
-                // and expected_loss_diff to 0 so that the loop is executed at least once and the variables are properly
-                // initialized in the first iteration of the loop
-                double actual_loss_diff = 1.0;
-                double expected_loss_diff = 0.0;
+                // to avoid initializing all variables of the while loop before, actual_loss_decrease is set to 0
+                // and expected_loss_decrease to 1 so that the loop is executed at least once and the variables are
+                // properly initialized in the first iteration of the loop
+                double actual_loss_decrease = 0.0;
+                double expected_loss_decrease = 1.0;
                 step_size = 1 / armijo_attenuation_factor;
 
-                while (actual_loss_diff > expected_loss_diff && step_size > min_step_size) {
+                while (expected_loss_decrease - actual_loss_decrease > eps && step_size > min_step_size) {
                   step_size *= armijo_attenuation_factor;
 
                   auto next_center = center + (step_size * step_direction.head(2)).matrix().transpose();
@@ -232,9 +233,9 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
                   auto next_loss = next_scaled_residuals.unaryExpr(&loss_fn_scalar).sum();
                   fitting_score = -1 * next_loss;
 
-                  actual_loss_diff = next_loss - fitting_loss;
-                  expected_loss_diff =
-                      armijo_min_decrease_percentage * step_size * (gradient.transpose() * step_direction.matrix())[0];
+                  actual_loss_decrease = fitting_loss - next_loss;
+                  expected_loss_decrease = -1 * armijo_min_decrease_percentage * step_size *
+                                           (gradient.transpose() * step_direction.matrix())[0];
                 }
               }
 
@@ -252,8 +253,8 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
                 break;
               }
 
-              if ((abs(radius_update) < break_min_change) && (abs(center_update[0]) < break_min_change) &&
-                  (abs(center_update[1]) < break_min_change)) {
+              if ((std::abs(radius_update) < break_min_change) && (std::abs(center_update[0]) < break_min_change) &&
+                  (std::abs(center_update[1]) < break_min_change)) {
                 break;
               }
             }

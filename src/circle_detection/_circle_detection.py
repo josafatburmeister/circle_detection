@@ -169,6 +169,7 @@ class CircleDetection:  # pylint: disable=too-many-instance-attributes
         ValueError: if :code:`acceleration_factor` is smaller than or equal to 1.
         ValueError: if :code:`armijo_attenuation_factor` is not within :math:`(0, 1)`.
         ValueError: if :code:`armijo_min_decrease_percentage` is not within :math:`(0, 1)`.
+        ValueError: if :code:`min_step_size` is greater than :code:`break_min_change`.
 
     Shape:
         - :code:`circles`: :math:`(C, 3)`
@@ -199,6 +200,9 @@ class CircleDetection:  # pylint: disable=too-many-instance-attributes
             raise ValueError("armijo_attenuation_factor must be in (0, 1).")
         if armijo_min_decrease_percentage >= 1 or armijo_min_decrease_percentage <= 0:
             raise ValueError("armijo_min_decrease_percentage must be in (0, 1).")
+
+        if min_step_size > break_min_change:
+            raise ValueError("min_step_size should be smaller than break_min_change.")
 
         self._bandwidth = bandwidth
         self._break_min_change = break_min_change
