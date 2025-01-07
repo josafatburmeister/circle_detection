@@ -285,32 +285,40 @@ class CircleDetection:  # pylint: disable=too-many-instance-attributes
                 smaller than this value during optimization, the optimization of the respective circle is terminated and
                 the respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
                 :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to
-                :code:`None`, :code:`min_start_x` is used as the default. Defaults to :code:`None`.
+                :code:`None`, :code:`min_start_x - np.maximum(0.1 * (max_start_x - min_start_x), self._bandwidth)` is
+                used as the default. Defaults to :code:`None`.
             break_max_x: Termination criterion for circle optimization. If the x-coordinate of a circle center becomes
                 greater than this value during optimization, the optimization of the respective circle is terminated and
                 the respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
                 :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to
-                :code:`None`, :code:`max_start_x` is used as the default. Defaults to :code:`None`.
+                :code:`None`, :code:`max_start_x + np.maximum(0.1 * (max_start_x - min_start_x), self._bandwidth)` is
+                used as the default. Defaults to :code:`None`.
             break_min_y: Termination criterion for circle optimization. If the y-coordinate of a circle center becomes
                 smaller than this value during optimization, the optimization of the respective circle is terminated and
                 the respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
                 :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to
-                :code:`None`, :code:`min_start_y` is used as the default. Defaults to :code:`None`.
+                :code:`None`, :code:`min_start_y - np.maximum(0.1 * (max_start_y - min_start_y), self._bandwidth)` is
+                used as the default. Defaults to :code:`None`.
             break_max_y: Termination criterion for circle optimization. If the y-coordinate of a circle center becomes
                 greater than this value during optimization, the optimization of the respective circle is terminated and
                 the respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
                 :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to
-                :code:`None`, :code:`max_start_y` is used as the default. Defaults to :code:`None`.
+                :code:`None`, :code:`max_start_y + np.maximum(0.1 * (max_start_y - min_start_y), self._bandwidth)` is
+                used as the default. Defaults to :code:`None`.
             break_min_radius: Termination criterion for circle optimization. If the radius of a circle center becomes
                 smaller than this value during optimization, the optimization of the respective circle is terminated and
                 the respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
                 :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to
-                :code:`None`, :code:`min_start_radius` is used as the default. Defaults to :code:`None`.
+                :code:`None`,
+                :code:`min_start_radius - np.maximum(0.1 * (max_start_radius - min_start_radius), self._bandwidth)` is
+                used as the default. Defaults to :code:`None`.
             break_max_radius: Termination criterion for circle optimization. If the radius of a circle center becomes
                 greater than this value during optimization, the optimization of the respective circle is terminated and
                 the respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
                 :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to
-                :code:`None`, :code:`max_start_radius` is used as the default. Defaults to :code:`None`.
+                :code:`None`,
+                :code:`max_start_radius - np.maximum(0.1 * (max_start_radius - min_start_radius), self._bandwidth)` is
+                used as the default. Defaults to :code:`None`.
             break_min_change: Termination criterion for circle optimization. If the updates of all circle parameters in
                 an iteration are smaller than this threshold, the optimization of the respective circle is terminated.
                 Defaults to :math:`10^{-5}`.
@@ -390,13 +398,13 @@ class CircleDetection:  # pylint: disable=too-many-instance-attributes
         max_start_x = cast(npt.NDArray[np.float64], max_start_x)
 
         if break_min_x is None:
-            break_min_x = min_start_x
+            break_min_x = min_start_x - np.maximum(0.1 * (max_start_x - min_start_x), self._bandwidth)
         elif not isinstance(break_min_x, np.ndarray):
             break_min_x = np.full(num_batches, fill_value=break_min_x, dtype=np.float64)
         break_min_x = cast(npt.NDArray[np.float64], break_min_x)
 
         if break_max_x is None:
-            break_max_x = max_start_x
+            break_max_x = max_start_x + np.maximum(0.1 * (max_start_x - min_start_x), self._bandwidth)
         elif not isinstance(break_max_x, np.ndarray):
             break_max_x = np.full(num_batches, fill_value=break_max_x, dtype=np.float64)
         break_max_x = cast(npt.NDArray[np.float64], break_max_x)
@@ -433,13 +441,13 @@ class CircleDetection:  # pylint: disable=too-many-instance-attributes
         max_start_y = cast(npt.NDArray[np.float64], max_start_y)
 
         if break_min_y is None:
-            break_min_y = min_start_y
+            break_min_y = min_start_y - np.maximum(0.1 * (max_start_y - min_start_y), self._bandwidth)
         elif not isinstance(break_min_y, np.ndarray):
             break_min_y = np.full(num_batches, fill_value=break_min_y, dtype=np.float64)
         break_min_y = cast(npt.NDArray[np.float64], break_min_y)
 
         if break_max_y is None:
-            break_max_y = max_start_y
+            break_max_y = max_start_y + np.maximum(0.1 * (max_start_y - min_start_y), self._bandwidth)
         elif not isinstance(break_max_y, np.ndarray):
             break_max_y = np.full(num_batches, fill_value=break_max_y, dtype=np.float64)
         break_max_y = cast(npt.NDArray[np.float64], break_max_y)
@@ -473,13 +481,17 @@ class CircleDetection:  # pylint: disable=too-many-instance-attributes
         min_start_radius = cast(npt.NDArray[np.float64], min_start_radius)
 
         if break_min_radius is None:
-            break_min_radius = min_start_radius
+            break_min_radius = min_start_radius - np.maximum(
+                0.1 * (max_start_radius - min_start_radius), self._bandwidth
+            )
         elif not isinstance(break_min_radius, np.ndarray):
             break_min_radius = np.full(num_batches, fill_value=break_min_radius, dtype=np.float64)
         break_min_radius = cast(npt.NDArray[np.float64], break_min_radius)
 
         if break_max_radius is None:
-            break_max_radius = max_start_radius
+            break_max_radius = max_start_radius + np.maximum(
+                0.1 * (max_start_radius - min_start_radius), self._bandwidth
+            )
         elif not isinstance(break_max_radius, np.ndarray):
             break_max_radius = np.full(num_batches, fill_value=break_max_radius, dtype=np.float64)
         break_max_radius = cast(npt.NDArray[np.float64], break_max_radius)
