@@ -210,7 +210,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
         self._min_step_size = min_step_size
         self._min_fitting_score = min_fitting_score
 
-    def detect(  # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements, arguments-differ
+    def detect(  # type: ignore[override] # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements, arguments-differ
         self,
         xy: npt.NDArray[np.float64],
         *,

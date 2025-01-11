@@ -112,7 +112,7 @@ class Ransac(CircleDetector):
         self._min_concensus_points = min_concensus_points
         self._min_fitting_score = min_fitting_score
 
-    def detect(  # pylint: disable=arguments-differ, too-many-arguments, too-many-locals, too-many-branches, too-many-statements
+    def detect(  # type: ignore[override] # pylint: disable=arguments-differ, too-many-arguments, too-many-locals, too-many-branches, too-many-statements
         self,
         xy: npt.NDArray[np.float64],
         *,
