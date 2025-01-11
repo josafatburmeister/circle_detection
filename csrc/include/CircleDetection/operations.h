@@ -1,3 +1,4 @@
+#include <omp.h>
 
 #include <Eigen/Dense>
 #include <cmath>
