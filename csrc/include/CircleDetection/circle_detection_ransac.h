@@ -102,8 +102,8 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles_ransac(ArrayX2d xy, ArrayX
     throw std::invalid_argument("The length of break_max_radius must be equal to the batch size.");
   }
 
-  if (num_workers != -1) {
-    omp_set_num_threads(num_workers);
+  if (num_workers <= 0) {
+    num_workers = omp_get_max_threads();
   }
 
   int64_t num_batches = batch_lengths.rows();
