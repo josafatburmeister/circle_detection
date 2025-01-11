@@ -27,14 +27,14 @@ class TestCircleDetector:
         circle_detector = Ransac(bandwidth=bandwidth)
         circle_detector.detect(
             xy,
-            num_workers=-1,
+            num_workers=1,
         )
         circle_detector.filter(
             max_circles=1,
             min_circumferential_completeness_idx=0.9,
             circumferential_completeness_idx_max_dist=max_dist,
             circumferential_completeness_idx_num_regions=int(365 / 5),
-            num_workers=-1,
+            num_workers=1,
         )
 
         assert len(circle_detector.circles) == 1
@@ -44,14 +44,14 @@ class TestCircleDetector:
 
         circle_detector.detect(
             xy[:50],
-            num_workers=-1,
+            num_workers=1,
         )
         circle_detector.filter(
             max_circles=1,
             min_circumferential_completeness_idx=0.9,
             circumferential_completeness_idx_max_dist=max_dist,
             circumferential_completeness_idx_num_regions=int(365 / 5),
-            num_workers=-1,
+            num_workers=1,
         )
 
         assert len(circle_detector.circles) == 0
@@ -74,12 +74,12 @@ class TestCircleDetector:
         circle_detector = Ransac(bandwidth=bandwidth)
         circle_detector.detect(
             np.concatenate(xy),
-            num_workers=-1,
+            num_workers=1,
         )
         circle_detector.filter(
             max_circles=2,
             non_maximum_suppression=True,
-            num_workers=-1,
+            num_workers=1,
         )
 
         expected_circles = np.array([[2, 2, 0.5], [0.1, 0.1, 1]], dtype=np.float64)
