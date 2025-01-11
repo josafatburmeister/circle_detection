@@ -10,7 +10,7 @@ from circle_detection import Ransac
 from test.utils import generate_circle_points  # pylint: disable=wrong-import-order
 
 
-class TestFitCircle:
+class TestRansac:
     """Tests for circle_detection.Ransac."""
 
     @pytest.mark.parametrize("add_noise_points", [True, False])
@@ -28,7 +28,7 @@ class TestFitCircle:
             current_circles = np.array([[center_x, center_y, radius]], dtype=np.float64)
             circles.append(current_circles)
             current_xy = generate_circle_points(
-                current_circles, min_points=50, max_points=2000, add_noise_points=add_noise_points, seed=batch_idx
+                current_circles, min_points=50, max_points=500, add_noise_points=add_noise_points, seed=batch_idx
             )
             xy.append(current_xy)
             batch_lengths.append(len(current_xy))
