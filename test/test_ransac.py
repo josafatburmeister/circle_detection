@@ -1,5 +1,7 @@
 """ Tests for circle_detection.Ransac. """
 
+import multiprocessing
+import time
 from typing import Any, Dict, Optional
 
 import numpy as np
@@ -48,6 +50,37 @@ class TestRansac:
             assert invalid_mask.sum() < len(expected_circles) * 0.02
         else:
             np.testing.assert_almost_equal(expected_circles, ransac.circles, decimal=4)
+
+    @pytest.mark.skipif(multiprocessing.cpu_count() <= 1, reason="Testing of multi-threading requires multiple cores.")
+    def test_multi_threading(self):
+        original_circles = np.array([[0, 0, 0.5], [0, 0, 0.52]])
+        xy_1 = generate_circle_points(original_circles[:1], min_points=500, max_points=500, variance=0.0)
+        xy_2 = generate_circle_points(original_circles[1:], min_points=500, max_points=500, variance=0.0)
+        batch_lengths = np.array([len(xy_1), len(xy_2)], dtype=np.int64)
+
+        circle_detector = Ransac(bandwidth=0.05, iterations=2000)
+
+        single_threaded_runtime = 0
+        multi_threaded_runtime = 0
+
+        repetitions = 4
+        for _ in range(repetitions):
+            start = time.time()
+            circle_detector.detect(
+                np.concatenate((xy_1, xy_2)),
+                batch_lengths=batch_lengths,
+                num_workers=1,
+            )
+            single_threaded_runtime += time.time() - start
+            start = time.time()
+            circle_detector.detect(
+                np.concatenate((xy_1, xy_2)),
+                batch_lengths=batch_lengths,
+                num_workers=-1,
+            )
+            multi_threaded_runtime += time.time() - start
+
+        assert multi_threaded_runtime < single_threaded_runtime
 
     @pytest.mark.parametrize(
         "kwargs",
