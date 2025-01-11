@@ -41,10 +41,13 @@ class TestRansac:
 
         expected_circles = np.concatenate(circles)
 
+        print("circles", len(circles))
+
         assert len(expected_circles) == len(circles)
 
         if add_noise_points:
             invalid_mask = np.abs((ransac.circles - expected_circles)).sum(axis=-1) > 1e-3
+            print("invalid_mask", invalid_mask.sum())
             assert invalid_mask.sum() < len(expected_circles) * 0.02
         else:
             np.testing.assert_almost_equal(expected_circles, ransac.circles, decimal=4)
