@@ -1,3 +1,4 @@
+#include <omp.h>
 
 #include <Eigen/Dense>
 #include <cmath>
@@ -11,6 +12,9 @@ namespace {
 using namespace Eigen;
 using ArrayXl = Eigen::Array<int64_t, Eigen::Dynamic, 1>;
 }  // namespace
+
+#ifndef OPERATIONS_H
+#define OPERATIONS_H
 
 namespace CircleDetection {
 
@@ -126,10 +130,10 @@ std::tuple<ArrayX3d, ArrayXl, ArrayXl> filter_circumferential_completeness_index
   return std::make_tuple(circles(filtered_indices, Eigen::all), filtered_batch_lengths_circles, filtered_indices_array);
 }
 
-std::tuple<ArrayX3d, ArrayXd, ArrayXl, ArrayXl> non_maximum_suppression(ArrayX3d circles, ArrayXd fitting_losses,
+std::tuple<ArrayX3d, ArrayXd, ArrayXl, ArrayXl> non_maximum_suppression(ArrayX3d circles, ArrayXd fitting_scores,
                                                                         ArrayXl batch_lengths, int num_workers = 1) {
-  if (circles.rows() != fitting_losses.rows()) {
-    throw std::invalid_argument("circles and fitting_losses must have the same number of entries.");
+  if (circles.rows() != fitting_scores.rows()) {
+    throw std::invalid_argument("circles and fitting_scores must have the same number of entries.");
   }
 
   if (circles.rows() != batch_lengths.sum()) {
@@ -160,8 +164,8 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl, ArrayXl> non_maximum_suppression(ArrayX3d
     int64_t num_circles = circles(seqN(batch_start, batch_lengths(batch_idx)), Eigen::all).rows();
     std::vector<int64_t> sorted_indices(num_circles);
     std::iota(sorted_indices.begin(), sorted_indices.end(), 0);
-    std::sort(sorted_indices.begin(), sorted_indices.end(), [&fitting_losses, batch_start](int i, int j) {
-      return fitting_losses(batch_start + i) < fitting_losses(batch_start + j);
+    std::sort(sorted_indices.begin(), sorted_indices.end(), [&fitting_scores, batch_start](int i, int j) {
+      return fitting_scores(batch_start + i) > fitting_scores(batch_start + j);
     });
 
     while (sorted_indices.size() > 0) {
@@ -190,7 +194,7 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl, ArrayXl> non_maximum_suppression(ArrayX3d
   int64_t total_num_selected_circles = new_batch_lengths.sum();
 
   ArrayX3d selected_circles(total_num_selected_circles, 3);
-  ArrayXd selected_fitting_losses(total_num_selected_circles);
+  ArrayXd selected_fitting_scores(total_num_selected_circles);
   ArrayXl selected_indices_array(total_num_selected_circles);
 
   batch_start = 0;
@@ -203,13 +207,15 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl, ArrayXl> non_maximum_suppression(ArrayX3d
   for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     selected_circles(seqN(new_batch_starts(batch_idx), new_batch_lengths(batch_idx)), Eigen::all) =
         circles(selected_indices[batch_idx], Eigen::all);
-    selected_fitting_losses(seqN(new_batch_starts(batch_idx), new_batch_lengths(batch_idx))) =
-        fitting_losses(selected_indices[batch_idx]);
+    selected_fitting_scores(seqN(new_batch_starts(batch_idx), new_batch_lengths(batch_idx))) =
+        fitting_scores(selected_indices[batch_idx]);
     selected_indices_array(seqN(new_batch_starts(batch_idx), new_batch_lengths(batch_idx))) =
         Eigen::Map<ArrayXl>(selected_indices[batch_idx].data(), new_batch_lengths(batch_idx));
   }
 
-  return std::make_tuple(selected_circles, selected_fitting_losses, new_batch_lengths, selected_indices_array);
+  return std::make_tuple(selected_circles, selected_fitting_scores, new_batch_lengths, selected_indices_array);
 }
 
 }  // namespace CircleDetection
+
+#endif  // OPERATIONS_H

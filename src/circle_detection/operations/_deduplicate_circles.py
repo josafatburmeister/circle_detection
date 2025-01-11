@@ -24,7 +24,7 @@ def deduplicate_circles(
             y-coordinate of the center, radius).
         deduplication_precision: Number of decimal places taken into account for deduplication.
         batch_lengths: Number of circles in each item of the input batch. For batch processing, it is expected that
-            all circles and fitting losses belonging to the same batch item are stored consecutively in the respective
+            all circles belonging to the same batch item are stored consecutively in the respective
             input array. For example, if a batch comprises two batch items with :math:`N_1` circles and :math:`N_2`
             circles, then :code:`batch_lengths` should be set to :code:`[N_1, N_2]` and :code:`circles[:N_1]` should
             contain the circles of the first batch item and :code:`circles[N_1:]` the circles of the second batch item.
