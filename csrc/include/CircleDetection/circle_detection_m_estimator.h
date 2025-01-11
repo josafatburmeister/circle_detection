@@ -7,28 +7,21 @@
 #include <tuple>
 #include <vector>
 
+#include "loss_functions.h"
+
+#ifndef CIRCLE_DETECTION_M_ESTIMATOR_H
+#define CIRCLE_DETECTION_M_ESTIMATOR_H
+
 namespace {
 
 using namespace Eigen;
 using ArrayXb = Eigen::Array<bool, Eigen::Dynamic, 1>;
 using ArrayXl = Eigen::Array<int64_t, Eigen::Dynamic, 1>;
 
-double loss_fn_scalar(double scaled_residual) {
-  const double SQRT_2_PI = 2.5066282746310002;
-  return -exp(-(scaled_residual * scaled_residual) / 2) / SQRT_2_PI;
-}
-
-double loss_fn_derivative_1_scalar(double scaled_residual) {
-  return -loss_fn_scalar(scaled_residual) * scaled_residual;
-}
-
-double loss_fn_derivative_2_scalar(double scaled_residual) {
-  return loss_fn_scalar(scaled_residual) * (scaled_residual * scaled_residual - 1);
-}
 }  // namespace
 
 namespace CircleDetection {
-std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
+std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles_m_estimator(
     ArrayX2d xy, ArrayXl batch_lengths, double bandwidth, ArrayXd min_start_x, ArrayXd max_start_x, int n_start_x,
     ArrayXd min_start_y, ArrayXd max_start_y, int n_start_y, ArrayXd min_start_radius, ArrayXd max_start_radius,
     int n_start_radius, ArrayXd break_min_x, ArrayXd break_max_x, ArrayXd break_min_y, ArrayXd break_max_y,
@@ -36,6 +29,49 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
     double acceleration_factor = 1.6, double armijo_attenuation_factor = 0.7,
     double armijo_min_decrease_percentage = 0.5, double min_step_size = 1e-20, double min_fitting_score = 1e-6,
     int num_workers = 1) {
+  if (xy.rows() != batch_lengths.sum()) {
+    throw std::invalid_argument("The number of points must be equal to the sum of batch_lengths");
+  }
+
+  if (min_start_x.rows() != batch_lengths.rows()) {
+    throw std::invalid_argument("The length of min_start_x must be equal to the batch size.");
+  }
+  if (max_start_x.rows() != batch_lengths.rows()) {
+    throw std::invalid_argument("The length of max_start_x must be equal to the batch size.");
+  }
+  if (break_min_x.rows() != batch_lengths.rows()) {
+    throw std::invalid_argument("The length of break_min_x must be equal to the batch size.");
+  }
+  if (break_max_x.rows() != batch_lengths.rows()) {
+    throw std::invalid_argument("The length of break_max_x must be equal to the batch size.");
+  }
+
+  if (min_start_y.rows() != batch_lengths.rows()) {
+    throw std::invalid_argument("The length of min_start_y must be equal to the batch size.");
+  }
+  if (max_start_y.rows() != batch_lengths.rows()) {
+    throw std::invalid_argument("The length of max_start_y must be equal to the batch size.");
+  }
+  if (break_min_y.rows() != batch_lengths.rows()) {
+    throw std::invalid_argument("The length of break_min_y must be equal to the batch size.");
+  }
+  if (break_max_y.rows() != batch_lengths.rows()) {
+    throw std::invalid_argument("The length of break_max_y must be equal to the batch size.");
+  }
+
+  if (min_start_radius.rows() != batch_lengths.rows()) {
+    throw std::invalid_argument("The length of min_start_radius must be equal to the batch size.");
+  }
+  if (max_start_radius.rows() != batch_lengths.rows()) {
+    throw std::invalid_argument("The length of max_start_radius must be equal to the batch size.");
+  }
+  if (break_min_radius.rows() != batch_lengths.rows()) {
+    throw std::invalid_argument("The length of break_min_radius must be equal to the batch size.");
+  }
+  if (break_max_radius.rows() != batch_lengths.rows()) {
+    throw std::invalid_argument("The length of break_max_radius must be equal to the batch size.");
+  }
+
   if (num_workers <= 0) {
     num_workers = omp_get_max_threads();
   }
@@ -65,7 +101,7 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
 
   ArrayX3d fitted_circles = ArrayX3d::Constant(num_batches * n_start_radius * n_start_x * n_start_y, 3, -1);
   ArrayXb fitting_converged = ArrayXb::Zero(num_batches * n_start_radius * n_start_x * n_start_y);
-  ArrayXd fitting_losses = ArrayXd::Constant(num_batches * n_start_radius * n_start_x * n_start_y, 0);
+  ArrayXd fitting_scores = ArrayXd::Constant(num_batches * n_start_radius * n_start_x * n_start_y, 0);
 
 #pragma omp parallel num_threads(num_workers)
 #pragma omp single
@@ -111,13 +147,13 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
                   (current_xy.matrix().rowwise() - center).rowwise().squaredNorm().array();
               ArrayXd dists_to_center = squared_dists_to_center.array().sqrt();
               ArrayXd scaled_residuals = (dists_to_center - radius) / bandwidth;
-              fitting_loss = scaled_residuals.unaryExpr(&loss_fn_scalar).sum();
+              fitting_loss = scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar).sum();
 
               // first derivative of the outer term of the loss function
-              ArrayXd outer_derivative_1 = scaled_residuals.unaryExpr(&loss_fn_derivative_1_scalar);
+              ArrayXd outer_derivative_1 = scaled_residuals.unaryExpr(&CircleDetection::loss_fn_derivative_1_scalar);
 
               // second derivative of the outer term of the loss function
-              ArrayXd outer_derivative_2 = scaled_residuals.unaryExpr(&loss_fn_derivative_2_scalar);
+              ArrayXd outer_derivative_2 = scaled_residuals.unaryExpr(&CircleDetection::loss_fn_derivative_2_scalar);
 
               // first derivative of the inner term of the loss function
               // this array stores the derivatives dx and dy in different columns
@@ -193,12 +229,12 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
                 auto next_radius = radius + (next_step_size * step_direction[2]);
                 ArrayXd next_scaled_residuals =
                     ((current_xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) / bandwidth;
-                auto next_loss = next_scaled_residuals.unaryExpr(&loss_fn_scalar).sum();
+                auto next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar).sum();
                 auto previous_loss = fitting_loss;
 
                 while (next_loss < previous_loss) {
                   step_size = next_step_size;
-                  fitting_score = -1 * next_loss;
+                  fitting_score = -1 * next_loss / bandwidth;
                   previous_loss = next_loss;
                   next_step_size *= acceleration_factor;
 
@@ -207,7 +243,7 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
                   ArrayXd next_scaled_residuals =
                       ((current_xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) /
                       bandwidth;
-                  next_loss = next_scaled_residuals.unaryExpr(&loss_fn_scalar).sum();
+                  next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar).sum();
                 }
               }
 
@@ -230,8 +266,8 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
                   ArrayXd next_scaled_residuals =
                       ((current_xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) /
                       bandwidth;
-                  auto next_loss = next_scaled_residuals.unaryExpr(&loss_fn_scalar).sum();
-                  fitting_score = -1 * next_loss;
+                  auto next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar).sum();
+                  fitting_score = -1 * next_loss / bandwidth;
 
                   actual_loss_decrease = fitting_loss - next_loss;
                   expected_loss_decrease = -1 * armijo_min_decrease_percentage * step_size *
@@ -266,7 +302,7 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
               fitted_circles(idx, 1) = center[1];
               fitted_circles(idx, 2) = radius;
               fitting_converged(idx) = true;
-              fitting_losses(idx) = -1 * fitting_score;
+              fitting_scores(idx) = fitting_score;
             }
           }
         }
@@ -286,8 +322,10 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles(
     }
   }
 
-  return std::make_tuple(fitted_circles(converged_indices, Eigen::all), fitting_losses(converged_indices),
+  return std::make_tuple(fitted_circles(converged_indices, Eigen::all), fitting_scores(converged_indices),
                          batch_lengths_circles);
 }
 
 }  // namespace CircleDetection
+
+#endif  // CIRCLE_DETECTION_M_ESTIMATOR_H

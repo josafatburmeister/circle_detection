@@ -43,13 +43,7 @@ extensions = [
 
 autodoc_type_aliases = {"ArrayLike": "ArrayLike"}
 default_role = "literal"
-napoleon_custom_sections = [
-    ("Parameters for the DBSCAN clustering of trunk points", "params_style"),
-    ("Parameters for the construction and maximum filtering of the canopy height model", "params_style"),
-    ("Parameters for the matching of trunk positions and crown top positions", "params_style"),
-    ("Parameters for the Watershed segmentation", "params_style"),
-    ("Parameters for the region growing segmentation", "params_style"),
-]
+napoleon_custom_sections = []
 napoleon_use_ivar = True
 nitpicky = True
 nitpick_ignore = [
@@ -57,6 +51,7 @@ nitpick_ignore = [
     ("py:class", "m"),
     ("py:class", "numpy.dtype"),
     ("py:class", "numpy.float64"),
+    ("py:class", "numpy.int64"),
     ("py:class", "numpy.ndarray"),
     ("py:class", "pandas.core.frame.DataFrame"),
     ("py:class", "pandas.DataFrame"),
