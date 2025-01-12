@@ -77,12 +77,12 @@ class TestNonMaximumSuppression:
 
         repetitions = 4
         for _ in range(repetitions):
-            start = time.time()
+            start = time.perf_counter()
             non_maximum_suppression(circles, fitting_scores, batch_lengths, num_workers=1)
-            single_threaded_runtime += time.time() - start
-            start = time.time()
+            single_threaded_runtime += time.perf_counter() - start
+            start = time.perf_counter()
             non_maximum_suppression(circles, fitting_scores, batch_lengths, num_workers=-1)
-            multi_threaded_runtime += time.time() - start
+            multi_threaded_runtime += time.perf_counter() - start
 
         assert multi_threaded_runtime < single_threaded_runtime
 
