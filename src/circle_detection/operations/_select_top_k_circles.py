@@ -9,11 +9,11 @@ import numpy.typing as npt
 
 
 def select_top_k_circles(
-    circles: npt.NDArray[np.float64],
-    fitting_scores: npt.NDArray[np.float64],
+    circles: npt.NDArray,
+    fitting_scores: npt.NDArray,
     k: int,
     batch_lengths: Optional[npt.NDArray[np.int64]] = None,
-) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.int64], npt.NDArray[np.int64]]:
+) -> Tuple[npt.NDArray, npt.NDArray, npt.NDArray[np.int64], npt.NDArray[np.int64]]:
     r"""
     Selects the :code:`k` circles with the highest fitting scores from a set of circles. If the set of circles contains
     less than :code:`k` circles, all circles are kept. This method supports batch processing, i.e. separate sets of
@@ -69,7 +69,7 @@ def select_top_k_circles(
 
         return circles[sorting_indices][:k], fitting_scores[sorting_indices][:k], batch_lengths, selected_indices
 
-    batch_indices = np.repeat(np.arange(len(batch_lengths), dtype=np.float64), batch_lengths)
+    batch_indices = np.repeat(np.arange(len(batch_lengths), dtype=circles.dtype), batch_lengths)
     sorting_indices = np.lexsort((-1 * fitting_scores, batch_indices))
     selected_indices = np.cumsum(np.concatenate(([0], batch_lengths)))[:-1]
 

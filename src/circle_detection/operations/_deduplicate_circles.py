@@ -9,10 +9,10 @@ import numpy.typing as npt
 
 
 def deduplicate_circles(
-    circles: npt.NDArray[np.float64],
+    circles: npt.NDArray,
     deduplication_precision: int,
     batch_lengths: Optional[npt.NDArray[np.int64]] = None,
-) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.int64], npt.NDArray[np.int64]]:
+) -> Tuple[npt.NDArray, npt.NDArray[np.int64], npt.NDArray[np.int64]]:
     r"""
     Deduplicates circles whose parameters do not differ up to the decimal place specified by
     :code:`deduplication_precision`. This method supports batch processing, i.e. separate sets of
@@ -67,8 +67,8 @@ def deduplicate_circles(
         return circles[selected_indices], np.array([len(unique_rounded_circles)], dtype=np.int64), selected_indices
 
     # add batch indices as first dimension to separate circles from different batch items
-    rounded_circles = np.empty((len(circles), 4), dtype=np.float64)
-    rounded_circles[:, 0] = np.repeat(np.arange(len(batch_lengths), dtype=np.float64), batch_lengths)
+    rounded_circles = np.empty((len(circles), 4), dtype=circles.dtype)
+    rounded_circles[:, 0] = np.repeat(np.arange(len(batch_lengths), dtype=circles.dtype), batch_lengths)
     rounded_circles[:, 1:] = np.round(circles, decimals=deduplication_precision)
 
     unique_rounded_circles, selected_indices = np.unique(rounded_circles, return_index=True, axis=0)
