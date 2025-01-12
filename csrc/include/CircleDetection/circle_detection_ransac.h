@@ -142,7 +142,7 @@ detect_circles_ransac(
 #pragma omp task
       {
         Eigen::Array<scalar_T, Eigen::Dynamic, 2> current_xy =
-            xy(seqN(batch_starts(batch_idx), batch_lengths(batch_idx)), Eigen::all);
+            xy(Eigen::seqN(batch_starts(batch_idx), batch_lengths(batch_idx)), Eigen::all);
         int samples_to_draw = std::min(num_samples, static_cast<int>(current_xy.rows()));
 
         std::vector<int64_t> indices(current_xy.rows());

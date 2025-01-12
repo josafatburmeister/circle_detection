@@ -11,7 +11,10 @@ PYBIND11_MODULE(_circle_detection_cpp, m) {
     Circle detection in 2D point sets.
   )pbdoc";
 
-  m.def("detect_circles_m_estimator", &CircleDetection::detect_circles_m_estimator,
+  m.def("detect_circles_m_estimator", &CircleDetection::detect_circles_m_estimator<float>,
+        pybind11::return_value_policy::reference_internal, "");
+
+  m.def("detect_circles_m_estimator", &CircleDetection::detect_circles_m_estimator<double>,
         pybind11::return_value_policy::reference_internal,
         R"pbdoc(
     C++ implementation of the M-estimator-based circle detection method proposed by Tim Garlipp and Christine H.

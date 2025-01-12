@@ -45,17 +45,15 @@ class CircleDetector(abc.ABC):
 
     def __init__(self) -> None:
         self._has_detected_circles = False
-        self.circles: npt.NDArray[np.float64] = np.empty((0, 3), dtype=np.float64)
-        self.fitting_scores: npt.NDArray[np.float64] = np.empty(0, dtype=np.float64)
+        self.circles: npt.NDArray = np.empty((0, 3), dtype=np.float64)
+        self.fitting_scores: npt.NDArray = np.empty(0, dtype=np.float64)
         self.batch_lengths_circles: npt.NDArray[np.int64] = np.array([0], dtype=np.int64)
 
-        self._xy: npt.NDArray[np.float64] = np.empty((0, 2), dtype=np.float64)
+        self._xy: npt.NDArray = np.empty((0, 2), dtype=np.float64)
         self._batch_lengths_xy: npt.NDArray[np.int64] = np.array([0], dtype=np.int64)
 
     @abc.abstractmethod
-    def detect(
-        self, xy: npt.NDArray[np.float64], *, batch_lengths: Optional[npt.NDArray[np.int64]] = None, **kwargs: Any
-    ):
+    def detect(self, xy: npt.NDArray, *, batch_lengths: Optional[npt.NDArray[np.int64]] = None, **kwargs: Any):
         """
         This method must be overwritten in subclasses to implement the circle detection approach.
 

@@ -179,7 +179,7 @@ non_maximum_suppression(Eigen::Array<scalar_T, Eigen::Dynamic, 3> circles,
     int64_t num_circles = circles(Eigen::seqN(batch_start, batch_lengths(batch_idx)), Eigen::all).rows();
     std::vector<int64_t> sorted_indices(num_circles);
     std::iota(sorted_indices.begin(), sorted_indices.end(), 0);
-    std::sort(sorted_indices.begin(), sorted_indices.end(), [&fitting_scores, batch_start](int i, int j) {
+    std::sort(sorted_indices.begin(), sorted_indices.end(), [&fitting_scores, batch_start](int64_t i, int64_t j) {
       return fitting_scores(batch_start + i) > fitting_scores(batch_start + j);
     });
 
