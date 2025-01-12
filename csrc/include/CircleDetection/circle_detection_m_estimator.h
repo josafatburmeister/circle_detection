@@ -147,13 +147,15 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles_m_estimator(
                   (current_xy.matrix().rowwise() - center).rowwise().squaredNorm().array();
               ArrayXd dists_to_center = squared_dists_to_center.array().sqrt();
               ArrayXd scaled_residuals = (dists_to_center - radius) / bandwidth;
-              fitting_loss = scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar).sum();
+              fitting_loss = scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<double>).sum();
 
               // first derivative of the outer term of the loss function
-              ArrayXd outer_derivative_1 = scaled_residuals.unaryExpr(&CircleDetection::loss_fn_derivative_1_scalar);
+              ArrayXd outer_derivative_1 =
+                  scaled_residuals.unaryExpr(&CircleDetection::loss_fn_derivative_1_scalar<double>);
 
               // second derivative of the outer term of the loss function
-              ArrayXd outer_derivative_2 = scaled_residuals.unaryExpr(&CircleDetection::loss_fn_derivative_2_scalar);
+              ArrayXd outer_derivative_2 =
+                  scaled_residuals.unaryExpr(&CircleDetection::loss_fn_derivative_2_scalar<double>);
 
               // first derivative of the inner term of the loss function
               // this array stores the derivatives dx and dy in different columns
@@ -229,7 +231,7 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles_m_estimator(
                 auto next_radius = radius + (next_step_size * step_direction[2]);
                 ArrayXd next_scaled_residuals =
                     ((current_xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) / bandwidth;
-                auto next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar).sum();
+                auto next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<double>).sum();
                 auto previous_loss = fitting_loss;
 
                 while (next_loss < previous_loss) {
@@ -243,7 +245,7 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles_m_estimator(
                   ArrayXd next_scaled_residuals =
                       ((current_xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) /
                       bandwidth;
-                  next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar).sum();
+                  next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<double>).sum();
                 }
               }
 
@@ -266,7 +268,7 @@ std::tuple<ArrayX3d, ArrayXd, ArrayXl> detect_circles_m_estimator(
                   ArrayXd next_scaled_residuals =
                       ((current_xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) /
                       bandwidth;
-                  auto next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar).sum();
+                  auto next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<double>).sum();
                   fitting_score = -1 * next_loss / bandwidth;
 
                   actual_loss_decrease = fitting_loss - next_loss;

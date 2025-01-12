@@ -17,7 +17,10 @@ class TestRansac:
 
     @pytest.mark.parametrize("add_noise_points", [True, False])
     @pytest.mark.parametrize("seed", [1, None])
-    def test_circle_fitting(self, add_noise_points: bool, seed: Optional[int]):  # pylint: disable=too-many-locals
+    @pytest.mark.parametrize("scalar_dtype", [np.float32, np.float64])
+    def test_circle_fitting(  # pylint: disable=too-many-locals
+        self, add_noise_points: bool, seed: Optional[int], scalar_dtype: np.dtype
+    ):
         batch_size = 250
         circles = []
         xy = []
@@ -27,7 +30,7 @@ class TestRansac:
             center_x = random_generator.uniform(0, batch_size, 1)[0]
             center_y = random_generator.uniform(0, batch_size, 1)[0]
             radius = random_generator.uniform(0, 1, 1)[0]
-            current_circles = np.array([[center_x, center_y, radius]], dtype=np.float64)
+            current_circles = np.array([[center_x, center_y, radius]], dtype=scalar_dtype)
             circles.append(current_circles)
             current_xy = generate_circle_points(
                 current_circles, min_points=50, max_points=500, add_noise_points=add_noise_points, seed=batch_idx
@@ -37,13 +40,18 @@ class TestRansac:
 
         ransac = Ransac(bandwidth=0.01, iterations=500)
         ransac.detect(
-            np.concatenate(xy), batch_lengths=np.array(batch_lengths, dtype=np.int64), num_workers=-1, seed=seed
+            np.concatenate(xy).astype(scalar_dtype),
+            batch_lengths=np.array(batch_lengths, dtype=np.int64),
+            num_workers=-1,
+            seed=seed,
         )
         ransac.filter(max_circles=1, deduplication_precision=4, non_maximum_suppression=False)
 
-        expected_circles = np.concatenate(circles)
+        expected_circles = np.concatenate(circles).astype(scalar_dtype)
 
-        assert len(expected_circles) == len(circles)
+        assert len(expected_circles) == len(ransac.circles)
+        assert ransac.circles.dtype == scalar_dtype
+        assert ransac.fitting_scores.dtype == scalar_dtype
 
         if add_noise_points:
             invalid_mask = np.abs((ransac.circles - expected_circles)).sum(axis=-1) > 1e-3

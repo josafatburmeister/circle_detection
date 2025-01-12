@@ -5,19 +5,25 @@
 
 namespace CircleDetection {
 
-double score_fn_scalar(double scaled_residual) {
-  const double SQRT_2_PI = 2.5066282746310002;
+template <typename scalar_T>
+scalar_T score_fn_scalar(scalar_T scaled_residual) {
+  const scalar_T SQRT_2_PI = 2.5066282746310002;
   return exp(-(scaled_residual * scaled_residual) / 2) / SQRT_2_PI;
 }
 
-double loss_fn_scalar(double scaled_residual) { return -score_fn_scalar(scaled_residual); }
-
-double loss_fn_derivative_1_scalar(double scaled_residual) {
-  return -loss_fn_scalar(scaled_residual) * scaled_residual;
+template <typename scalar_T>
+scalar_T loss_fn_scalar(scalar_T scaled_residual) {
+  return -score_fn_scalar<scalar_T>(scaled_residual);
 }
 
-double loss_fn_derivative_2_scalar(double scaled_residual) {
-  return loss_fn_scalar(scaled_residual) * (scaled_residual * scaled_residual - 1);
+template <typename scalar_T>
+scalar_T loss_fn_derivative_1_scalar(scalar_T scaled_residual) {
+  return -loss_fn_scalar<scalar_T>(scaled_residual) * scaled_residual;
+}
+
+template <typename scalar_T>
+scalar_T loss_fn_derivative_2_scalar(scalar_T scaled_residual) {
+  return loss_fn_scalar<scalar_T>(scaled_residual) * (scaled_residual * scaled_residual - 1);
 }
 }  // namespace CircleDetection
 

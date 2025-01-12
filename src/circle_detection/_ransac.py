@@ -114,20 +114,19 @@ class Ransac(CircleDetector):
 
     def detect(  # type: ignore[override] # pylint: disable=arguments-differ, too-many-arguments, too-many-locals, too-many-branches, too-many-statements
         self,
-        xy: npt.NDArray[np.float64],
+        xy: npt.NDArray,
         *,
         batch_lengths: Optional[npt.NDArray[np.int64]] = None,
-        break_min_x: Optional[Union[float, npt.NDArray[np.float64]]] = None,
-        break_max_x: Optional[Union[float, npt.NDArray[np.float64]]] = None,
-        break_min_y: Optional[Union[float, npt.NDArray[np.float64]]] = None,
-        break_max_y: Optional[Union[float, npt.NDArray[np.float64]]] = None,
-        break_min_radius: Optional[Union[float, npt.NDArray[np.float64]]] = None,
-        break_max_radius: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+        break_min_x: Optional[Union[float, npt.NDArray]] = None,
+        break_max_x: Optional[Union[float, npt.NDArray]] = None,
+        break_min_y: Optional[Union[float, npt.NDArray]] = None,
+        break_max_y: Optional[Union[float, npt.NDArray]] = None,
+        break_min_radius: Optional[Union[float, npt.NDArray]] = None,
+        break_max_radius: Optional[Union[float, npt.NDArray]] = None,
         num_workers: int = 1,
         seed: Optional[int] = None,
     ):
         """
-
         Executes the circle detection on the given input points. The results of the circle detection are stored in
         :code:`self.circles`, :code:`self.fitting_scores`, and :code:`self.batch_lengths_circles`.
 
@@ -206,7 +205,7 @@ class Ransac(CircleDetector):
                 xy[batch_start:batch_end, 0].min() if batch_start < batch_end else 0
                 for (batch_start, batch_end) in zip(batch_starts, batch_ends)
             ],
-            dtype=np.float64,
+            dtype=xy.dtype,
         )
 
         max_start_x = np.array(
@@ -214,20 +213,20 @@ class Ransac(CircleDetector):
                 xy[batch_start:batch_end, 0].max() if batch_start < batch_end else 0
                 for (batch_start, batch_end) in zip(batch_starts, batch_ends)
             ],
-            dtype=np.float64,
+            dtype=xy.dtype,
         )
 
         if break_min_x is None:
             break_min_x = min_start_x - 2 * self._bandwidth  # type: ignore[assignment]
         elif not isinstance(break_min_x, np.ndarray):
-            break_min_x = np.full(num_batches, fill_value=break_min_x, dtype=np.float64)
-        break_min_x = cast(npt.NDArray[np.float64], break_min_x)
+            break_min_x = np.full(num_batches, fill_value=break_min_x, dtype=xy.dtype)
+        break_min_x = cast(npt.NDArray, break_min_x)
 
         if break_max_x is None:
             break_max_x = max_start_x + 2 * self._bandwidth  # type: ignore[assignment]
         elif not isinstance(break_max_x, np.ndarray):
-            break_max_x = np.full(num_batches, fill_value=break_max_x, dtype=np.float64)
-        break_max_x = cast(npt.NDArray[np.float64], break_max_x)
+            break_max_x = np.full(num_batches, fill_value=break_max_x, dtype=xy.dtype)
+        break_max_x = cast(npt.NDArray, break_max_x)
 
         if (break_min_x >= break_max_x).any():
             raise ValueError("break_min_x must be smaller than break_max_x.")
@@ -237,7 +236,7 @@ class Ransac(CircleDetector):
                 xy[batch_start:batch_end, 1].min() if batch_start < batch_end else 0
                 for (batch_start, batch_end) in zip(batch_starts, batch_ends)
             ],
-            dtype=np.float64,
+            dtype=xy.dtype,
         )
 
         max_start_y = np.array(
@@ -245,20 +244,20 @@ class Ransac(CircleDetector):
                 xy[batch_start:batch_end, 1].max() if batch_start < batch_end else 0
                 for (batch_start, batch_end) in zip(batch_starts, batch_ends)
             ],
-            dtype=np.float64,
+            dtype=xy.dtype,
         )
 
         if break_min_y is None:
             break_min_y = min_start_y - 2 * self._bandwidth  # type: ignore[assignment]
         elif not isinstance(break_min_y, np.ndarray):
-            break_min_y = np.full(num_batches, fill_value=break_min_y, dtype=np.float64)
-        break_min_y = cast(npt.NDArray[np.float64], break_min_y)
+            break_min_y = np.full(num_batches, fill_value=break_min_y, dtype=xy.dtype)
+        break_min_y = cast(npt.NDArray, break_min_y)
 
         if break_max_y is None:
             break_max_y = max_start_y + 2 * self._bandwidth  # type: ignore[assignment]
         elif not isinstance(break_max_y, np.ndarray):
-            break_max_y = np.full(num_batches, fill_value=break_max_y, dtype=np.float64)
-        break_max_y = cast(npt.NDArray[np.float64], break_max_y)
+            break_max_y = np.full(num_batches, fill_value=break_max_y, dtype=xy.dtype)
+        break_max_y = cast(npt.NDArray, break_max_y)
 
         if (break_min_y > break_max_y).any():
             raise ValueError("break_min_y must be smaller than break_max_y.")
@@ -275,16 +274,16 @@ class Ransac(CircleDetector):
         )
 
         if break_min_radius is None:
-            break_min_radius = np.zeros(num_batches, dtype=np.float64)
+            break_min_radius = np.zeros(num_batches, dtype=xy.dtype)
         elif not isinstance(break_min_radius, np.ndarray):
-            break_min_radius = np.full(num_batches, fill_value=break_min_radius, dtype=np.float64)
-        break_min_radius = cast(npt.NDArray[np.float64], break_min_radius)
+            break_min_radius = np.full(num_batches, fill_value=break_min_radius, dtype=xy.dtype)
+        break_min_radius = cast(npt.NDArray, break_min_radius)
 
         if break_max_radius is None:
             break_max_radius = max_start_radius + 2 * self._bandwidth  # type: ignore[assignment]
         elif not isinstance(break_max_radius, np.ndarray):
-            break_max_radius = np.full(num_batches, fill_value=break_max_radius, dtype=np.float64)
-        break_max_radius = cast(npt.NDArray[np.float64], break_max_radius)
+            break_max_radius = np.full(num_batches, fill_value=break_max_radius, dtype=xy.dtype)
+        break_max_radius = cast(npt.NDArray, break_max_radius)
 
         if (break_min_radius > break_max_radius).any():
             raise ValueError("break_min_radius must be smaller than break_max_radius.")
