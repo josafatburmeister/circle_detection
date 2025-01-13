@@ -9,7 +9,7 @@ import pytest
 
 from circle_detection import MEstimator
 
-from test.utils import generate_circles, generate_circle_points
+from test.utils import generate_circles, generate_circle_points  # pylint: disable=wrong-import-order
 
 
 class TestMEstimator:

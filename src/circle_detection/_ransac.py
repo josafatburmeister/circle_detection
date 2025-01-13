@@ -217,13 +217,13 @@ class Ransac(CircleDetector):
         )
 
         if break_min_x is None:
-            break_min_x = min_start_x - 2 * self._bandwidth  # type: ignore[assignment]
+            break_min_x = min_start_x - 2 * self._bandwidth
         elif not isinstance(break_min_x, np.ndarray):
             break_min_x = np.full(num_batches, fill_value=break_min_x, dtype=xy.dtype)
         break_min_x = cast(npt.NDArray, break_min_x)
 
         if break_max_x is None:
-            break_max_x = max_start_x + 2 * self._bandwidth  # type: ignore[assignment]
+            break_max_x = max_start_x + 2 * self._bandwidth
         elif not isinstance(break_max_x, np.ndarray):
             break_max_x = np.full(num_batches, fill_value=break_max_x, dtype=xy.dtype)
         break_max_x = cast(npt.NDArray, break_max_x)
@@ -248,13 +248,13 @@ class Ransac(CircleDetector):
         )
 
         if break_min_y is None:
-            break_min_y = min_start_y - 2 * self._bandwidth  # type: ignore[assignment]
+            break_min_y = min_start_y - 2 * self._bandwidth
         elif not isinstance(break_min_y, np.ndarray):
             break_min_y = np.full(num_batches, fill_value=break_min_y, dtype=xy.dtype)
         break_min_y = cast(npt.NDArray, break_min_y)
 
         if break_max_y is None:
-            break_max_y = max_start_y + 2 * self._bandwidth  # type: ignore[assignment]
+            break_max_y = max_start_y + 2 * self._bandwidth
         elif not isinstance(break_max_y, np.ndarray):
             break_max_y = np.full(num_batches, fill_value=break_max_y, dtype=xy.dtype)
         break_max_y = cast(npt.NDArray, break_max_y)
@@ -280,7 +280,7 @@ class Ransac(CircleDetector):
         break_min_radius = cast(npt.NDArray, break_min_radius)
 
         if break_max_radius is None:
-            break_max_radius = max_start_radius + 2 * self._bandwidth  # type: ignore[assignment]
+            break_max_radius = max_start_radius + 2 * self._bandwidth
         elif not isinstance(break_max_radius, np.ndarray):
             break_max_radius = np.full(num_batches, fill_value=break_max_radius, dtype=xy.dtype)
         break_max_radius = cast(npt.NDArray, break_max_radius)

@@ -100,7 +100,8 @@ detect_circles_m_estimator(
       Eigen::Array<scalar_T, Eigen::Dynamic, 1> offset = current_xy.colwise().mean();
       offsets(batch_idx, Eigen::all) = offset;
 
-      xy(Eigen::seqN(batch_starts(batch_idx), batch_lengths(batch_idx)), Eigen::all) = current_xy.rowwise() - offsets(batch_idx, Eigen::all);
+      xy(Eigen::seqN(batch_starts(batch_idx), batch_lengths(batch_idx)), Eigen::all) =
+          current_xy.rowwise() - offsets(batch_idx, Eigen::all);
       min_start_x(batch_idx) = (min_start_x(batch_idx) - offset(0));
       max_start_x(batch_idx) = (max_start_x(batch_idx) - offset(0));
       min_start_y(batch_idx) = (min_start_y(batch_idx) - offset(1));
@@ -176,8 +177,7 @@ detect_circles_m_estimator(
               Eigen::Array<scalar_T, Eigen::Dynamic, 1> squared_dists_to_center =
                   (current_xy.matrix().rowwise() - center).rowwise().squaredNorm().array();
               Eigen::Array<scalar_T, Eigen::Dynamic, 1> dists_to_center = squared_dists_to_center.array().sqrt();
-              Eigen::Array<scalar_T, Eigen::Dynamic, 1> scaled_residuals =
-                  (dists_to_center - radius) / bandwidth;
+              Eigen::Array<scalar_T, Eigen::Dynamic, 1> scaled_residuals = (dists_to_center - radius) / bandwidth;
               fitting_loss = scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<scalar_T>).mean();
 
               // first derivative of the outer term of the loss function
@@ -204,8 +204,8 @@ detect_circles_m_estimator(
                    1 / dists_to_center.replicate(1, 2));
               // this array stores the derivatives dxdy and dydx in one column (both are identical)
               Eigen::Array<scalar_T, Eigen::Dynamic, 1> inner_derivative_2_x_y =
-                  -1 / bandwidth * 1 / (squared_dists_to_center * dists_to_center) *
-                  (current_xy.col(0) - center[0]) * (current_xy.col(1) - center[1]);
+                  -1 / bandwidth * 1 / (squared_dists_to_center * dists_to_center) * (current_xy.col(0) - center[0]) *
+                  (current_xy.col(1) - center[1]);
 
               // first derivatives of the entire loss function with respect to the circle parameters
               Eigen::RowVector<scalar_T, 2> derivative_xy =
@@ -279,7 +279,8 @@ detect_circles_m_estimator(
                   auto next_center = center + (next_step_size * step_direction.head(2)).matrix().transpose();
                   auto next_radius = radius + (next_step_size * step_direction[2]);
                   Eigen::Array<scalar_T, Eigen::Dynamic, 1> next_scaled_residuals =
-                      ((current_xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) / bandwidth;
+                      ((current_xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) /
+                      bandwidth;
                   next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<scalar_T>).mean();
                 }
               }
@@ -301,7 +302,8 @@ detect_circles_m_estimator(
                   auto next_center = center + (step_size * step_direction.head(2)).matrix().transpose();
                   auto next_radius = radius + (step_size * step_direction[2]);
                   Eigen::Array<scalar_T, Eigen::Dynamic, 1> next_scaled_residuals =
-                      ((current_xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) / bandwidth;
+                      ((current_xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) /
+                      bandwidth;
                   auto next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<scalar_T>).mean();
                   fitting_score = -1 * next_loss / bandwidth;
 
@@ -325,8 +327,7 @@ detect_circles_m_estimator(
                 break;
               }
 
-              if ((std::abs(radius_update) < break_min_change) &&
-                  (std::abs(center_update[0]) < break_min_change) &&
+              if ((std::abs(radius_update) < break_min_change) && (std::abs(center_update[0]) < break_min_change) &&
                   (std::abs(center_update[1]) < break_min_change)) {
                 break;
               }

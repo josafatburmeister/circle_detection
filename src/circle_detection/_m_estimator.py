@@ -506,7 +506,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
         max_start_radius = cast(npt.NDArray, max_start_radius)
 
         if min_start_radius is None:
-            min_start_radius = 0.1 * max_start_radius  # type: ignore[assignment]
+            min_start_radius = 0.1 * max_start_radius
         elif not isinstance(min_start_radius, np.ndarray):
             min_start_radius = np.full(num_batches, fill_value=min_start_radius, dtype=xy.dtype)
         else:
