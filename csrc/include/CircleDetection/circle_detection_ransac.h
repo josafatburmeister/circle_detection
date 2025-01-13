@@ -12,18 +12,10 @@
 #include <vector>
 
 #include "loss_functions.h"
+#include "operations.h"
 
 #ifndef CIRCLE_DETECTION_RANSAC_H
 #define CIRCLE_DETECTION_RANSAC_H
-
-namespace {
-
-template <typename scalar_T>
-scalar_T stddev(Eigen::Array<scalar_T, Eigen::Dynamic, 2> x) {
-  scalar_T variance = (x - x.mean()).square().mean();
-  return std::sqrt(variance);
-}
-}  // namespace
 
 namespace CircleDetection {
 
@@ -33,6 +25,7 @@ Eigen::Vector<scalar_T, 3> fit_circle_lsq(Eigen::Array<scalar_T, Eigen::Dynamic,
   xy = xy.rowwise() - origin.transpose().array();
 
   scalar_T scale = stddev(xy);
+  scale  = scale < 1e-20 ? 1.0 : scale;
 
   xy = xy / scale;
 

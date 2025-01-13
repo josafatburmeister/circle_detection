@@ -8,6 +8,7 @@
 #include <vector>
 
 #include "loss_functions.h"
+#include "operations.h"
 
 #ifndef CIRCLE_DETECTION_M_ESTIMATOR_H
 #define CIRCLE_DETECTION_M_ESTIMATOR_H
@@ -81,11 +82,45 @@ detect_circles_m_estimator(
   auto num_batches = batch_lengths.rows();
 
   Eigen::Array<int64_t, Eigen::Dynamic, 1> batch_starts(num_batches);
+  Eigen::Array<scalar_T, Eigen::Dynamic, 2> offsets(num_batches, 2);
+  Eigen::Array<scalar_T, Eigen::Dynamic, 1> scales(num_batches, 1);
 
   int64_t batch_start = 0;
   for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     batch_starts(batch_idx) = batch_start;
     batch_start += batch_lengths(batch_idx);
+  }
+
+// to improve the numerical stability the data are normalized before the circle detection
+// after circle detection, the inverse of the normalization is applied to the circle parameters
+#pragma omp parallel for num_threads(num_workers)
+  for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
+    if (batch_lengths(batch_idx) > 0) {
+      Eigen::Array<scalar_T, Eigen::Dynamic, 2> current_xy =
+          xy(Eigen::seqN(batch_starts(batch_idx), batch_lengths(batch_idx)), Eigen::all);
+      Eigen::Array<scalar_T, Eigen::Dynamic, 1> offset = current_xy.colwise().mean();
+      offsets(batch_idx, Eigen::all) = offset;
+
+      current_xy = current_xy.rowwise() - offsets(batch_idx, Eigen::all);
+      scalar_T scale = stddev(current_xy);
+      scale = scale < 1e-20 ? 1.0 : scale;
+      scales(batch_idx) = scale;
+      current_xy = current_xy / scale;
+
+      xy(Eigen::seqN(batch_starts(batch_idx), batch_lengths(batch_idx)), Eigen::all) = current_xy;
+      min_start_x(batch_idx) = (min_start_x(batch_idx) - offset(0)) / scale;
+      max_start_x(batch_idx) = (max_start_x(batch_idx) - offset(0)) / scale;
+      min_start_y(batch_idx) = (min_start_y(batch_idx) - offset(1)) / scale;
+      max_start_y(batch_idx) = (max_start_y(batch_idx) - offset(1)) / scale;
+      min_start_radius(batch_idx) = min_start_radius(batch_idx) / scales(batch_idx);
+      max_start_radius(batch_idx) = max_start_radius(batch_idx) / scales(batch_idx);
+      break_min_x(batch_idx) = (break_min_x(batch_idx) - offset(0)) / scale;
+      break_max_x(batch_idx) = (break_max_x(batch_idx) - offset(0)) / scale;
+      break_min_y(batch_idx) = (break_min_y(batch_idx) - offset(1)) / scale;
+      break_max_y(batch_idx) = (break_max_y(batch_idx) - offset(1)) / scale;
+      break_min_radius(batch_idx) = break_min_radius(batch_idx) / scale;
+      break_max_radius(batch_idx) = break_max_radius(batch_idx) / scale;
+    }
   }
 
   Eigen::Array<scalar_T, Eigen::Dynamic, 1> start_radii(num_batches * n_start_radius);
@@ -137,6 +172,8 @@ detect_circles_m_estimator(
             } else {
               current_xy = xy;
             }
+            auto current_bandwidth = bandwidth / scales(idx_batch);
+            auto current_break_min_change = break_min_change / scales(idx_batch);
 
             auto start_radius = start_radii[idx_batch * n_start_radius + idx_radius];
             auto radius = start_radius;
@@ -153,8 +190,9 @@ detect_circles_m_estimator(
               Eigen::Array<scalar_T, Eigen::Dynamic, 1> squared_dists_to_center =
                   (current_xy.matrix().rowwise() - center).rowwise().squaredNorm().array();
               Eigen::Array<scalar_T, Eigen::Dynamic, 1> dists_to_center = squared_dists_to_center.array().sqrt();
-              Eigen::Array<scalar_T, Eigen::Dynamic, 1> scaled_residuals = (dists_to_center - radius) / bandwidth;
-              fitting_loss = scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<scalar_T>).sum();
+              Eigen::Array<scalar_T, Eigen::Dynamic, 1> scaled_residuals =
+                  (dists_to_center - radius) / current_bandwidth;
+              fitting_loss = scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<scalar_T>).mean();
 
               // first derivative of the outer term of the loss function
               Eigen::Array<scalar_T, Eigen::Dynamic, 1> outer_derivative_1 =
@@ -167,59 +205,59 @@ detect_circles_m_estimator(
               // first derivative of the inner term of the loss function
               // this array stores the derivatives dx and dy in different columns
               Eigen::Array<scalar_T, Eigen::Dynamic, 2> inner_derivative_1_x =
-                  (-1 / (bandwidth * dists_to_center)).replicate(1, 2) *
+                  (-1 / (current_bandwidth * dists_to_center)).replicate(1, 2) *
                   (current_xy.matrix().rowwise() - center).array();
-              scalar_T inner_derivative_1_r = -1 / bandwidth;
+              scalar_T inner_derivative_1_r = -1 / current_bandwidth;
 
               // second derivative of the inner term of the loss function
               // this array stores the derivatives dxdx and dydy in different columns
               Eigen::Array<scalar_T, Eigen::Dynamic, 2> inner_derivative_2_x_x =
-                  1 / bandwidth *
+                  1 / current_bandwidth *
                   (-1 / (squared_dists_to_center * dists_to_center).replicate(1, 2) *
                        (current_xy.matrix().rowwise() - center).array().square() +
                    1 / dists_to_center.replicate(1, 2));
               // this array stores the derivatives dxdy and dydx in one column (both are identical)
               Eigen::Array<scalar_T, Eigen::Dynamic, 1> inner_derivative_2_x_y =
-                  -1 / bandwidth * 1 / (squared_dists_to_center * dists_to_center) * (current_xy.col(0) - center[0]) *
-                  (current_xy.col(1) - center[1]);
+                  -1 / current_bandwidth * 1 / (squared_dists_to_center * dists_to_center) *
+                  (current_xy.col(0) - center[0]) * (current_xy.col(1) - center[1]);
 
               // first derivatives of the entire loss function with respect to the circle parameters
               Eigen::RowVector<scalar_T, 2> derivative_xy =
-                  (outer_derivative_1.replicate(1, 2) * inner_derivative_1_x).matrix().colwise().sum();
-              scalar_T derivative_r = (outer_derivative_1 * inner_derivative_1_r).matrix().sum();
+                  (outer_derivative_1.replicate(1, 2) * inner_derivative_1_x).matrix().colwise().mean();
+              scalar_T derivative_r = (outer_derivative_1 * inner_derivative_1_r).matrix().mean();
               Eigen::Vector<scalar_T, 3> gradient(derivative_xy[0], derivative_xy[1], derivative_r);
 
               // second derivatives of the entire loss function with respect to the circle parameters
               scalar_T derivative_x_x = ((outer_derivative_2 * inner_derivative_1_x.col(0).square()) +
                                          (outer_derivative_1 * inner_derivative_2_x_x.col(0)))
                                             .matrix()
-                                            .sum();
+                                            .mean();
               scalar_T derivative_x_y =
                   ((outer_derivative_2 * inner_derivative_1_x.col(1) * inner_derivative_1_x.col(0)) +
                    (outer_derivative_1 * inner_derivative_2_x_y))
                       .matrix()
-                      .sum();
+                      .mean();
               scalar_T derivative_x_r =
-                  (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_x.col(0)).matrix().sum();
+                  (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_x.col(0)).matrix().mean();
 
               scalar_T derivative_y_x =
                   ((outer_derivative_2 * inner_derivative_1_x.col(0) * inner_derivative_1_x.col(1)) +
                    (outer_derivative_1 * inner_derivative_2_x_y))
                       .matrix()
-                      .sum();
+                      .mean();
               scalar_T derivative_y_y = ((outer_derivative_2 * inner_derivative_1_x.col(1).square()) +
                                          (outer_derivative_1 * inner_derivative_2_x_x.col(1)))
                                             .matrix()
-                                            .sum();
+                                            .mean();
               scalar_T derivative_y_r =
-                  (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_x.col(1)).matrix().sum();
+                  (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_x.col(1)).matrix().mean();
 
               scalar_T derivative_r_x =
-                  (outer_derivative_2 * inner_derivative_1_x.col(0) * inner_derivative_1_r).matrix().sum();
+                  (outer_derivative_2 * inner_derivative_1_x.col(0) * inner_derivative_1_r).matrix().mean();
               scalar_T derivative_r_y =
-                  (outer_derivative_2 * inner_derivative_1_x.col(1) * inner_derivative_1_r).matrix().sum();
+                  (outer_derivative_2 * inner_derivative_1_x.col(1) * inner_derivative_1_r).matrix().mean();
               scalar_T derivative_r_r =
-                  (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_r).matrix().sum();
+                  (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_r).matrix().mean();
 
               Eigen::Matrix<scalar_T, Eigen::Dynamic, 3> hessian(3, 3);
               hessian << derivative_x_x, derivative_x_y, derivative_x_r, derivative_y_x, derivative_y_y, derivative_y_r,
@@ -242,13 +280,14 @@ detect_circles_m_estimator(
                 auto next_center = center + (next_step_size * step_direction.head(2)).matrix().transpose();
                 auto next_radius = radius + (next_step_size * step_direction[2]);
                 Eigen::Array<scalar_T, Eigen::Dynamic, 1> next_scaled_residuals =
-                    ((current_xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) / bandwidth;
-                auto next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<scalar_T>).sum();
+                    ((current_xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) /
+                    current_bandwidth;
+                auto next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<scalar_T>).mean();
                 auto previous_loss = fitting_loss;
 
                 while (next_loss < previous_loss) {
                   step_size = next_step_size;
-                  fitting_score = -1 * next_loss / bandwidth;
+                  fitting_score = -1 * next_loss / current_bandwidth;
                   previous_loss = next_loss;
                   next_step_size *= acceleration_factor;
 
@@ -256,8 +295,8 @@ detect_circles_m_estimator(
                   auto next_radius = radius + (next_step_size * step_direction[2]);
                   Eigen::Array<scalar_T, Eigen::Dynamic, 1> next_scaled_residuals =
                       ((current_xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) /
-                      bandwidth;
-                  next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<scalar_T>).sum();
+                      current_bandwidth;
+                  next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<scalar_T>).mean();
                 }
               }
 
@@ -279,9 +318,9 @@ detect_circles_m_estimator(
                   auto next_radius = radius + (step_size * step_direction[2]);
                   Eigen::Array<scalar_T, Eigen::Dynamic, 1> next_scaled_residuals =
                       ((current_xy.matrix().rowwise() - next_center).rowwise().norm().array() - next_radius) /
-                      bandwidth;
-                  auto next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<scalar_T>).sum();
-                  fitting_score = -1 * next_loss / bandwidth;
+                      current_bandwidth;
+                  auto next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<scalar_T>).mean();
+                  fitting_score = -1 * next_loss / current_bandwidth;
 
                   actual_loss_decrease = fitting_loss - next_loss;
                   expected_loss_decrease = -1 * armijo_min_decrease_percentage * step_size *
@@ -303,18 +342,21 @@ detect_circles_m_estimator(
                 break;
               }
 
-              if ((std::abs(radius_update) < break_min_change) && (std::abs(center_update[0]) < break_min_change) &&
-                  (std::abs(center_update[1]) < break_min_change)) {
+              if ((std::abs(radius_update) < current_break_min_change) &&
+                  (std::abs(center_update[0]) < current_break_min_change) &&
+                  (std::abs(center_update[1]) < current_break_min_change)) {
                 break;
               }
             }
 
+            fitting_score = current_xy.rows() * fitting_score / scales(idx_batch);
             if (!diverged && fitting_score >= min_fitting_score && std::isfinite(center[0]) &&
                 std::isfinite(center[1]) && std::isfinite(radius) && radius > 0) {
               int64_t idx = n_start_radius * (n_start_y * (idx_batch * n_start_x + idx_x) + idx_y) + idx_radius;
-              fitted_circles(idx, 0) = center[0];
-              fitted_circles(idx, 1) = center[1];
-              fitted_circles(idx, 2) = radius;
+              // revert the normalization
+              fitted_circles(idx, 0) = center[0] * scales(idx_batch) + offsets(idx_batch, 0);
+              fitted_circles(idx, 1) = center[1] * scales(idx_batch) + offsets(idx_batch, 1);
+              fitted_circles(idx, 2) = radius * scales(idx_batch);
               fitting_converged(idx) = true;
               fitting_scores(idx) = fitting_score;
             }

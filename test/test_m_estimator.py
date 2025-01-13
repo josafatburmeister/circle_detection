@@ -9,7 +9,7 @@ import pytest
 
 from circle_detection import MEstimator
 
-from .utils import generate_circles, generate_circle_points
+from test.utils import generate_circles, generate_circle_points
 
 
 class TestMEstimator:
@@ -33,7 +33,7 @@ class TestMEstimator:
         np.testing.assert_array_equal(circle_detector.batch_lengths_circles, np.array([1], dtype=np.int64))
 
         # the first circle is expected to be returned because its points have lower variance
-        decimal = 10 if scalar_dtype == np.float64 else 5
+        decimal = 10 if scalar_dtype == np.float64 else 7
         np.testing.assert_almost_equal(original_circles[0], circle_detector.circles[0], decimal=decimal)
 
         circle_detector.detect(xy, num_workers=-1)
@@ -52,7 +52,7 @@ class TestMEstimator:
             expected_fitting_scores.append(expected_loss.sum())
 
         assert (np.abs(original_circles - circle_detector.circles) < 0.01).all()
-        decimal = 5 if scalar_dtype == np.float64 else 4
+        decimal = 10 if scalar_dtype == np.float64 else 4
         np.testing.assert_almost_equal(expected_fitting_scores, circle_detector.fitting_scores, decimal=decimal)
 
     @pytest.mark.parametrize("scalar_dtype", [np.float32, np.float64])

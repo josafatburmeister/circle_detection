@@ -14,6 +14,12 @@
 namespace CircleDetection {
 
 template <typename scalar_T>
+scalar_T stddev(Eigen::Array<scalar_T, Eigen::Dynamic, 2> x) {
+  scalar_T variance = (x - x.mean()).square().mean();
+  return std::sqrt(variance);
+}
+
+template <typename scalar_T>
 Eigen::Array<scalar_T, Eigen::Dynamic, 1> circumferential_completeness_index(
     Eigen::Array<scalar_T, Eigen::Dynamic, 3> circles, Eigen::Array<scalar_T, Eigen::Dynamic, 2> xy,
     Eigen::Array<int64_t, Eigen::Dynamic, 1> batch_lengths_circles,
