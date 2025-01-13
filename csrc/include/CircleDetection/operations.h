@@ -94,7 +94,8 @@ Eigen::Array<scalar_T, Eigen::Dynamic, 1> circumferential_completeness_index(
             return std::atan2(y, x);
           });
 
-      Eigen::Array<int64_t, Eigen::Dynamic, 1> sections = (angles / angular_step_size).floor().cast<int64_t>();
+      Eigen::Array<int64_t, Eigen::Dynamic, 1> sections =
+          (angles / angular_step_size).floor().unaryExpr([](scalar_T x) { return static_cast<int64_t>(x); });
       sections = sections.unaryExpr([num_regions](const int64_t x) { return x % num_regions; });
 
       std::set<int64_t> filled_sections(sections.data(), sections.data() + sections.size());
