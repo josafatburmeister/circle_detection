@@ -146,15 +146,15 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
         max_iterations: Maximum number of optimization iterations to run for each combination of starting values.
             Defaults to 1000.
         min_fitting_score: Minimum fitting score (equal to -1 :math:`\cdot` fitting loss) that a circle must have in
-            order not to be discarded. Defaults to :math:`100`.
+            order not to be discarded. Defaults to :math:`1`.
 
     Attributes:
         circles: After the :code:`self.detect()` method has been called, this attribute contains the parameters of the
             detected circles (in the following order: x-coordinate of the center, y-coordinate of the center, radius).
             If the :code:`self.detect()` method has not yet been called, this attribute is an empty array.
         fitting_scores: After the :code:`self.detect()` method has been called, this attribute contains the fitting
-            scores of the detected circles (negative fitting loss, higher means better). If the :code:`self.detect()`
-            method has not yet been called, this attribute is an empty array.
+            scores of the detected circles (equal to -1 :math:`\cdot` fitting loss, higher means better). If the
+            :code:`self.detect()` method has not yet been called, this attribute is an empty array.
         batch_lengths_circles: After the :code:`self.detect()` method has been called, this attribute contains the
             number of circles detected for each batch item (circles belonging to the same batch item are stored
             consecutively in :code:`self.circles`). If the :code:`self.detect()` method has not yet been
@@ -187,7 +187,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
         armijo_attenuation_factor: float = 0.5,
         armijo_min_decrease_percentage: float = 0.1,
         min_step_size: float = 1e-20,
-        min_fitting_score: float = 100,
+        min_fitting_score: float = 1,
     ):
         super().__init__()
 

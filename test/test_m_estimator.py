@@ -33,7 +33,7 @@ class TestMEstimator:
         np.testing.assert_array_equal(circle_detector.batch_lengths_circles, np.array([1], dtype=np.int64))
 
         # the first circle is expected to be returned because its points have lower variance
-        decimal = 10 if scalar_dtype == np.float64 else 7
+        decimal = 10 if scalar_dtype == np.float64 else 5
         np.testing.assert_almost_equal(original_circles[0], circle_detector.circles[0], decimal=decimal)
 
         circle_detector.detect(xy, num_workers=-1)
@@ -49,7 +49,7 @@ class TestMEstimator:
         for circle in circle_detector.circles:
             residuals = (np.linalg.norm(xy - circle[:2], axis=-1) - circle[2]) / bandwidth
             expected_loss = 1 / np.sqrt(2 * np.pi) * np.exp(-1 / 2 * residuals**2) / bandwidth
-            expected_fitting_scores.append(expected_loss.sum())
+            expected_fitting_scores.append(expected_loss.mean())
 
         assert (np.abs(original_circles - circle_detector.circles) < 0.01).all()
         decimal = 10 if scalar_dtype == np.float64 else 4
@@ -70,7 +70,7 @@ class TestMEstimator:
         min_start_xy = xy.min(axis=0) - 2
         max_start_xy = xy.max(axis=0) + 2
 
-        circle_detector = MEstimator(bandwidth=0.05, min_fitting_score=100)
+        circle_detector = MEstimator(bandwidth=0.05, min_fitting_score=1)
         circle_detector.detect(
             xy,
             min_start_x=min_start_xy[0],
