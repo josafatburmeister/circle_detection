@@ -25,7 +25,7 @@ Eigen::Vector<scalar_T, 3> fit_circle_lsq(Eigen::Array<scalar_T, Eigen::Dynamic,
   xy = xy.rowwise() - origin.transpose().array();
 
   scalar_T scale = stddev(xy);
-  scale  = scale < 1e-20 ? 1.0 : scale;
+  scale = scale < 1e-20 ? 1.0 : scale;
 
   xy = xy / scale;
 
