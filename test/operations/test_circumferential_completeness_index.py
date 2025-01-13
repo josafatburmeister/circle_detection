@@ -15,9 +15,12 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
 
     @pytest.mark.parametrize("pass_batch_lengths", [True, False])
     @pytest.mark.parametrize("max_dist", [0.1, None])
-    def test_circumferential_completeness_index(self, pass_batch_lengths: bool, max_dist: Optional[float]):
-        circles = np.array([[0, 0, 1], [5, 0, 1]], dtype=np.float64)
-        xy = np.array([[0, 1], [0, -1], [1, 0], [-1, 0], [5, 1], [5, -1]], dtype=np.float64)
+    @pytest.mark.parametrize("scalar_dtype", [np.float32, np.float64])
+    def test_circumferential_completeness_index(
+        self, pass_batch_lengths: bool, max_dist: Optional[float], scalar_dtype: np.dtype
+    ):
+        circles = np.array([[0, 0, 1], [5, 0, 1]], dtype=scalar_dtype)
+        xy = np.array([[0, 1], [0, -1], [1, 0], [-1, 0], [5, 1], [5, -1]], dtype=scalar_dtype)
 
         if pass_batch_lengths:
             batch_lengths_circles = np.array([len(circles)], dtype=np.int64)
@@ -28,12 +31,13 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
 
         num_regions = 4
 
-        expected_circumferential_completness_indices = np.array([1, 0.5], dtype=np.float64)
+        expected_circumferential_completness_indices = np.array([1, 0.5], dtype=scalar_dtype)
 
         circumferential_completeness_indices = circumferential_completeness_index(
             circles, xy, num_regions, max_dist, batch_lengths_circles, batch_lengths_xy
         )
 
+        assert circumferential_completeness_indices.dtype == scalar_dtype
         np.testing.assert_array_equal(
             expected_circumferential_completness_indices, circumferential_completeness_indices
         )
@@ -51,6 +55,7 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
             batch_lengths_xy=batch_lengths_xy,
         )
 
+        assert filtered_circles.dtype == scalar_dtype
         np.testing.assert_array_equal(expected_filtered_circles, filtered_circles)
         np.testing.assert_array_equal(expected_batch_lengths_circles, batch_lengths_circles)
         np.testing.assert_array_equal(filtered_circles, circles[selected_indices])

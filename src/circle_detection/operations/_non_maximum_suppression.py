@@ -13,11 +13,11 @@ from circle_detection.operations._operations_cpp import (  # type: ignore[import
 
 
 def non_maximum_suppression(
-    circles: npt.NDArray[np.float64],
-    fitting_scores: npt.NDArray[np.float64],
+    circles: npt.NDArray,
+    fitting_scores: npt.NDArray,
     batch_lengths: Optional[npt.NDArray[np.int64]] = None,
     num_workers: int = 1,
-) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.float64], npt.NDArray[np.int64], npt.NDArray[np.int64]]:
+) -> Tuple[npt.NDArray, npt.NDArray, npt.NDArray[np.int64], npt.NDArray[np.int64]]:
     r"""
     Non-maximum suppression operation to remove overlapping circles. If a circle overlaps with other circles, it is
     only kept if it has the highest fitting score among the circles with which it overlaps. This method supports batch

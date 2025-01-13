@@ -146,15 +146,15 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
         max_iterations: Maximum number of optimization iterations to run for each combination of starting values.
             Defaults to 1000.
         min_fitting_score: Minimum fitting score (equal to -1 :math:`\cdot` fitting loss) that a circle must have in
-            order not to be discarded. Defaults to :math:`100`.
+            order not to be discarded. Defaults to :math:`1`.
 
     Attributes:
         circles: After the :code:`self.detect()` method has been called, this attribute contains the parameters of the
             detected circles (in the following order: x-coordinate of the center, y-coordinate of the center, radius).
             If the :code:`self.detect()` method has not yet been called, this attribute is an empty array.
         fitting_scores: After the :code:`self.detect()` method has been called, this attribute contains the fitting
-            scores of the detected circles (negative fitting loss, higher means better). If the :code:`self.detect()`
-            method has not yet been called, this attribute is an empty array.
+            scores of the detected circles (equal to -1 :math:`\cdot` fitting loss, higher means better). If the
+            :code:`self.detect()` method has not yet been called, this attribute is an empty array.
         batch_lengths_circles: After the :code:`self.detect()` method has been called, this attribute contains the
             number of circles detected for each batch item (circles belonging to the same batch item are stored
             consecutively in :code:`self.circles`). If the :code:`self.detect()` method has not yet been
@@ -187,7 +187,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
         armijo_attenuation_factor: float = 0.5,
         armijo_min_decrease_percentage: float = 0.1,
         min_step_size: float = 1e-20,
-        min_fitting_score: float = 100,
+        min_fitting_score: float = 1,
     ):
         super().__init__()
 
@@ -212,24 +212,24 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
 
     def detect(  # type: ignore[override] # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements, arguments-differ
         self,
-        xy: npt.NDArray[np.float64],
+        xy: npt.NDArray,
         *,
         batch_lengths: Optional[npt.NDArray[np.int64]] = None,
-        min_start_x: Optional[Union[float, npt.NDArray[np.float64]]] = None,
-        max_start_x: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+        min_start_x: Optional[Union[float, npt.NDArray]] = None,
+        max_start_x: Optional[Union[float, npt.NDArray]] = None,
         n_start_x: int = 10,
-        min_start_y: Optional[Union[float, npt.NDArray[np.float64]]] = None,
-        max_start_y: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+        min_start_y: Optional[Union[float, npt.NDArray]] = None,
+        max_start_y: Optional[Union[float, npt.NDArray]] = None,
         n_start_y: int = 10,
-        min_start_radius: Optional[Union[float, npt.NDArray[np.float64]]] = None,
-        max_start_radius: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+        min_start_radius: Optional[Union[float, npt.NDArray]] = None,
+        max_start_radius: Optional[Union[float, npt.NDArray]] = None,
         n_start_radius: int = 10,
-        break_min_x: Optional[Union[float, npt.NDArray[np.float64]]] = None,
-        break_max_x: Optional[Union[float, npt.NDArray[np.float64]]] = None,
-        break_min_y: Optional[Union[float, npt.NDArray[np.float64]]] = None,
-        break_max_y: Optional[Union[float, npt.NDArray[np.float64]]] = None,
-        break_min_radius: Optional[Union[float, npt.NDArray[np.float64]]] = None,
-        break_max_radius: Optional[Union[float, npt.NDArray[np.float64]]] = None,
+        break_min_x: Optional[Union[float, npt.NDArray]] = None,
+        break_max_x: Optional[Union[float, npt.NDArray]] = None,
+        break_min_y: Optional[Union[float, npt.NDArray]] = None,
+        break_max_y: Optional[Union[float, npt.NDArray]] = None,
+        break_min_radius: Optional[Union[float, npt.NDArray]] = None,
+        break_max_radius: Optional[Union[float, npt.NDArray]] = None,
         num_workers: int = 1,
     ) -> None:
         r"""
@@ -392,11 +392,13 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
                     xy[batch_start:batch_end, 0].min() if batch_start < batch_end else 0
                     for (batch_start, batch_end) in zip(batch_starts, batch_ends)
                 ],
-                dtype=np.float64,
+                dtype=xy.dtype,
             )
         elif not isinstance(min_start_x, np.ndarray):
-            min_start_x = np.full(num_batches, fill_value=min_start_x, dtype=np.float64)
-        min_start_x = cast(npt.NDArray[np.float64], min_start_x)
+            min_start_x = np.full(num_batches, fill_value=min_start_x, dtype=xy.dtype)
+        else:
+            min_start_x = min_start_x.astype(xy.dtype)
+        min_start_x = cast(npt.NDArray, min_start_x)
 
         if max_start_x is None:
             max_start_x = np.array(
@@ -404,23 +406,29 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
                     xy[batch_start:batch_end, 0].max() if batch_start < batch_end else 0
                     for (batch_start, batch_end) in zip(batch_starts, batch_ends)
                 ],
-                dtype=np.float64,
+                dtype=xy.dtype,
             )
         elif not isinstance(max_start_x, np.ndarray):
-            max_start_x = np.full(num_batches, fill_value=max_start_x, dtype=np.float64)
-        max_start_x = cast(npt.NDArray[np.float64], max_start_x)
+            max_start_x = np.full(num_batches, fill_value=max_start_x, dtype=xy.dtype)
+        else:
+            max_start_x = max_start_x.astype(xy.dtype)
+        max_start_x = cast(npt.NDArray, max_start_x)
 
         if break_min_x is None:
             break_min_x = min_start_x - np.maximum(0.1 * (max_start_x - min_start_x), 2 * self._bandwidth)
         elif not isinstance(break_min_x, np.ndarray):
-            break_min_x = np.full(num_batches, fill_value=break_min_x, dtype=np.float64)
-        break_min_x = cast(npt.NDArray[np.float64], break_min_x)
+            break_min_x = np.full(num_batches, fill_value=break_min_x, dtype=xy.dtype)
+        else:
+            break_min_x = break_min_x.astype(xy.dtype)
+        break_min_x = cast(npt.NDArray, break_min_x)
 
         if break_max_x is None:
             break_max_x = max_start_x + np.maximum(0.1 * (max_start_x - min_start_x), 2 * self._bandwidth)
         elif not isinstance(break_max_x, np.ndarray):
-            break_max_x = np.full(num_batches, fill_value=break_max_x, dtype=np.float64)
-        break_max_x = cast(npt.NDArray[np.float64], break_max_x)
+            break_max_x = np.full(num_batches, fill_value=break_max_x, dtype=xy.dtype)
+        else:
+            break_max_x = break_max_x.astype(xy.dtype)
+        break_max_x = cast(npt.NDArray, break_max_x)
 
         if (min_start_x > max_start_x).any():
             raise ValueError("min_start_x must be smaller than or equal to max_start_x.")
@@ -435,11 +443,13 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
                     xy[batch_start:batch_end, 1].min() if batch_start < batch_end else 0
                     for (batch_start, batch_end) in zip(batch_starts, batch_ends)
                 ],
-                dtype=np.float64,
+                dtype=xy.dtype,
             )
         elif not isinstance(min_start_y, np.ndarray):
-            min_start_y = np.full(num_batches, fill_value=min_start_y, dtype=np.float64)
-        min_start_y = cast(npt.NDArray[np.float64], min_start_y)
+            min_start_y = np.full(num_batches, fill_value=min_start_y, dtype=xy.dtype)
+        else:
+            min_start_y = min_start_y.astype(xy.dtype)
+        min_start_y = cast(npt.NDArray, min_start_y)
 
         if max_start_y is None:
             max_start_y = np.array(
@@ -447,23 +457,29 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
                     xy[batch_start:batch_end, 1].max() if batch_start < batch_end else 0
                     for (batch_start, batch_end) in zip(batch_starts, batch_ends)
                 ],
-                dtype=np.float64,
+                dtype=xy.dtype,
             )
         elif not isinstance(max_start_y, np.ndarray):
-            max_start_y = np.full(num_batches, fill_value=max_start_y, dtype=np.float64)
-        max_start_y = cast(npt.NDArray[np.float64], max_start_y)
+            max_start_y = np.full(num_batches, fill_value=max_start_y, dtype=xy.dtype)
+        else:
+            max_start_y = max_start_y.astype(xy.dtype)
+        max_start_y = cast(npt.NDArray, max_start_y)
 
         if break_min_y is None:
             break_min_y = min_start_y - np.maximum(0.1 * (max_start_y - min_start_y), 2 * self._bandwidth)
         elif not isinstance(break_min_y, np.ndarray):
-            break_min_y = np.full(num_batches, fill_value=break_min_y, dtype=np.float64)
-        break_min_y = cast(npt.NDArray[np.float64], break_min_y)
+            break_min_y = np.full(num_batches, fill_value=break_min_y, dtype=xy.dtype)
+        else:
+            break_min_y = break_min_y.astype(xy.dtype)
+        break_min_y = cast(npt.NDArray, break_min_y)
 
         if break_max_y is None:
             break_max_y = max_start_y + np.maximum(0.1 * (max_start_y - min_start_y), 2 * self._bandwidth)
         elif not isinstance(break_max_y, np.ndarray):
-            break_max_y = np.full(num_batches, fill_value=break_max_y, dtype=np.float64)
-        break_max_y = cast(npt.NDArray[np.float64], break_max_y)
+            break_max_y = np.full(num_batches, fill_value=break_max_y, dtype=xy.dtype)
+        else:
+            break_max_y = break_max_y.astype(xy.dtype)
+        break_max_y = cast(npt.NDArray, break_max_y)
 
         if (min_start_y > max_start_y).any():
             raise ValueError("min_start_y must be smaller than or equal to max_start_y.")
@@ -484,30 +500,38 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
                 ]
             )
         elif not isinstance(max_start_radius, np.ndarray):
-            max_start_radius = np.full(num_batches, fill_value=max_start_radius, dtype=np.float64)
-        max_start_radius = cast(npt.NDArray[np.float64], max_start_radius)
+            max_start_radius = np.full(num_batches, fill_value=max_start_radius, dtype=xy.dtype)
+        else:
+            max_start_radius = max_start_radius.astype(xy.dtype)
+        max_start_radius = cast(npt.NDArray, max_start_radius)
 
         if min_start_radius is None:
-            min_start_radius = 0.1 * max_start_radius  # type: ignore[assignment]
+            min_start_radius = 0.1 * max_start_radius
         elif not isinstance(min_start_radius, np.ndarray):
-            min_start_radius = np.full(num_batches, fill_value=min_start_radius, dtype=np.float64)
-        min_start_radius = cast(npt.NDArray[np.float64], min_start_radius)
+            min_start_radius = np.full(num_batches, fill_value=min_start_radius, dtype=xy.dtype)
+        else:
+            min_start_radius = min_start_radius.astype(xy.dtype)
+        min_start_radius = cast(npt.NDArray, min_start_radius)
 
         if break_min_radius is None:
             break_min_radius = min_start_radius - np.maximum(
                 0.1 * (max_start_radius - min_start_radius), 2 * self._bandwidth
             )
         elif not isinstance(break_min_radius, np.ndarray):
-            break_min_radius = np.full(num_batches, fill_value=break_min_radius, dtype=np.float64)
-        break_min_radius = cast(npt.NDArray[np.float64], break_min_radius)
+            break_min_radius = np.full(num_batches, fill_value=break_min_radius, dtype=xy.dtype)
+        else:
+            break_min_radius = break_min_radius.astype(xy.dtype)
+        break_min_radius = cast(npt.NDArray, break_min_radius)
 
         if break_max_radius is None:
             break_max_radius = max_start_radius + np.maximum(
                 0.1 * (max_start_radius - min_start_radius), 2 * self._bandwidth
             )
         elif not isinstance(break_max_radius, np.ndarray):
-            break_max_radius = np.full(num_batches, fill_value=break_max_radius, dtype=np.float64)
-        break_max_radius = cast(npt.NDArray[np.float64], break_max_radius)
+            break_max_radius = np.full(num_batches, fill_value=break_max_radius, dtype=xy.dtype)
+        else:
+            break_max_radius = break_max_radius.astype(xy.dtype)
+        break_max_radius = cast(npt.NDArray, break_max_radius)
 
         if (min_start_radius < 0).any():
             raise ValueError("min_start_radius must be larger than zero.")

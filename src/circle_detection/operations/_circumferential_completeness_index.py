@@ -17,14 +17,14 @@ from circle_detection.operations._operations_cpp import (  # type: ignore[import
 
 
 def circumferential_completeness_index(
-    circles: npt.NDArray[np.float64],
-    xy: npt.NDArray[np.float64],
+    circles: npt.NDArray,
+    xy: npt.NDArray,
     num_regions: int,
     max_dist: Optional[float] = None,
     batch_lengths_circles: Optional[npt.NDArray[np.int64]] = None,
     batch_lengths_xy: Optional[npt.NDArray[np.int64]] = None,
     num_workers: int = 1,
-) -> npt.NDArray[np.float64]:
+) -> npt.NDArray:
     r"""
     Calculates the circumferential completeness indices of the specified circles. The circumferential completeness index
     is a metric that measures how well a circle fitted to a set of points is covered by points. It was proposed in
@@ -102,15 +102,15 @@ def circumferential_completeness_index(
 
 
 def filter_circumferential_completeness_index(
-    circles: npt.NDArray[np.float64],
-    xy: npt.NDArray[np.float64],
+    circles: npt.NDArray,
+    xy: npt.NDArray,
     num_regions: int,
     min_circumferential_completeness_index: float,
     max_dist: Optional[float] = None,
     batch_lengths_circles: Optional[npt.NDArray[np.int64]] = None,
     batch_lengths_xy: Optional[npt.NDArray[np.int64]] = None,
     num_workers: int = 1,
-) -> Tuple[npt.NDArray[np.float64], npt.NDArray[np.int64], npt.NDArray[np.int64]]:
+) -> Tuple[npt.NDArray, npt.NDArray[np.int64], npt.NDArray[np.int64]]:
     r"""
     Filters out the circles whose circumferential completeness index is below the specified minimum circumferential
     completeness index. This method supports batch processing, i.e. separate sets of circles (i.e., different batch

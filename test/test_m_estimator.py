@@ -9,15 +9,17 @@ import pytest
 
 from circle_detection import MEstimator
 
-from .utils import generate_circles, generate_circle_points
+from test.utils import generate_circles, generate_circle_points  # pylint: disable=wrong-import-order
 
 
 class TestMEstimator:
     """Tests for :code:`circle_detection.MEstimator`."""
 
-    def test_circle_one_perfect_fit_and_one_noisy_circle(self):
+    @pytest.mark.parametrize("scalar_dtype", [np.float32, np.float64])
+    def test_circle_one_perfect_fit_and_one_noisy_circle(self, scalar_dtype: np.dtype):
         original_circles = np.array([[0, 0, 0.5], [0, 2, 0.5]])
         xy = generate_circle_points(original_circles, min_points=100, max_points=100, variance=np.array([0, 0.05]))
+        xy = xy.astype(scalar_dtype)
         bandwidth = 0.07
 
         circle_detector = MEstimator(bandwidth=bandwidth)
@@ -26,28 +28,35 @@ class TestMEstimator:
 
         assert len(circle_detector.circles) == 1
         assert len(circle_detector.fitting_scores) == 1
+        assert circle_detector.circles.dtype == scalar_dtype
+        assert circle_detector.fitting_scores.dtype == scalar_dtype
         np.testing.assert_array_equal(circle_detector.batch_lengths_circles, np.array([1], dtype=np.int64))
 
         # the first circle is expected to be returned because its points have lower variance
-        np.testing.assert_almost_equal(original_circles[0], circle_detector.circles[0], decimal=10)
+        decimal = 10 if scalar_dtype == np.float64 else 5
+        np.testing.assert_almost_equal(original_circles[0], circle_detector.circles[0], decimal=decimal)
 
         circle_detector.detect(xy, num_workers=-1)
         circle_detector.filter(max_circles=2, non_maximum_suppression=True, num_workers=-1)
 
         assert len(circle_detector.circles) == 2
         assert len(circle_detector.fitting_scores) == 2
+        assert circle_detector.circles.dtype == scalar_dtype
+        assert circle_detector.fitting_scores.dtype == scalar_dtype
         np.testing.assert_array_equal(circle_detector.batch_lengths_circles, np.array([2], dtype=np.int64))
 
         expected_fitting_scores = []
         for circle in circle_detector.circles:
             residuals = (np.linalg.norm(xy - circle[:2], axis=-1) - circle[2]) / bandwidth
             expected_loss = 1 / np.sqrt(2 * np.pi) * np.exp(-1 / 2 * residuals**2) / bandwidth
-            expected_fitting_scores.append(expected_loss.sum())
+            expected_fitting_scores.append(expected_loss.mean())
 
         assert (np.abs(original_circles - circle_detector.circles) < 0.01).all()
-        np.testing.assert_almost_equal(expected_fitting_scores, circle_detector.fitting_scores, decimal=5)
+        decimal = 10 if scalar_dtype == np.float64 else 4
+        np.testing.assert_almost_equal(expected_fitting_scores, circle_detector.fitting_scores, decimal=decimal)
 
-    def test_several_noisy_circles(self):
+    @pytest.mark.parametrize("scalar_dtype", [np.float32, np.float64])
+    def test_several_noisy_circles(self, scalar_dtype: np.dtype):
         original_circles = generate_circles(
             num_circles=2,
             min_radius=0.2,
@@ -56,11 +65,12 @@ class TestMEstimator:
         xy = generate_circle_points(
             original_circles, min_points=50, max_points=150, add_noise_points=True, variance=0.01
         )
+        xy = xy.astype(scalar_dtype)
 
         min_start_xy = xy.min(axis=0) - 2
         max_start_xy = xy.max(axis=0) + 2
 
-        circle_detector = MEstimator(bandwidth=0.05, min_fitting_score=100)
+        circle_detector = MEstimator(bandwidth=0.05, min_fitting_score=1)
         circle_detector.detect(
             xy,
             min_start_x=min_start_xy[0],
@@ -84,6 +94,8 @@ class TestMEstimator:
 
         assert len(original_circles) == len(circle_detector.circles)
         assert len(circle_detector.circles) == len(circle_detector.fitting_scores)
+        assert circle_detector.circles.dtype == scalar_dtype
+        assert circle_detector.fitting_scores.dtype == scalar_dtype
         np.testing.assert_array_equal(
             circle_detector.batch_lengths_circles, np.array([len(original_circles)], dtype=np.int64)
         )
