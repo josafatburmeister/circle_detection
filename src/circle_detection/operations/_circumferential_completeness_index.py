@@ -42,10 +42,10 @@ def circumferential_completeness_index(
         circles: Parameters of the circles for which to compute the circumferential completeness indices. Each circle
             must be defined by three parameters in the following order: x-coordinate of the center, y-coordinate of the
             center, radius. If the :code:`circles` array has a row-major storage layout
-            (`numpy's <https://numpy.org/doc/stable/dev/internals.html>`__ default) a copy of the array is created. To
+            (`numpy's <https://numpy.org/doc/stable/dev/internals.html>`__ default), a copy of the array is created. To
             pass :code:`circles` by reference, :code:`circles` must be in column-major format.
         xy: Coordinates of the set of 2D points to which the circles were fitted. If the :code:`xy` array has a
-            row-major storage layout (`numpy's <https://numpy.org/doc/stable/dev/internals.html>`__ default) a copy of
+            row-major storage layout (`numpy's <https://numpy.org/doc/stable/dev/internals.html>`__ default), a copy of
             the array is created. To pass :code:`xy` by reference, :code:`xy` must be in column-major format.
         num_regions: Number of angular regions.
         max_dist: Maximum distance a point can have to the circle outline to be counted as part of the circle. If set to

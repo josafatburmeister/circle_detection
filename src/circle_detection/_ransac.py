@@ -132,7 +132,7 @@ class Ransac(CircleDetector):
 
         Args:
             xy: Coordinates of the set of 2D points in which to detect circles. If the :code:`xy` array has a row-major
-                storage layout (`numpy's <https://numpy.org/doc/stable/dev/internals.html>`__ default) a copy of the
+                storage layout (`numpy's <https://numpy.org/doc/stable/dev/internals.html>`__ default), a copy of the
                 array is created. To pass :code:`xy` by reference, :code:`xy` must be in column-major format.
             batch_lengths: Number of points in each point set of the input batch. For batch processing, it is
                 expected that all points belonging to the same point set are stored consecutively in the :code:`xy`
@@ -275,7 +275,8 @@ class Ransac(CircleDetector):
                     else 0.1
                 )
                 for (batch_start, batch_end) in zip(batch_starts, batch_ends)
-            ]
+            ],
+            dtype=xy.dtype
         )
 
         if break_min_radius is None:
