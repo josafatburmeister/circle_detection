@@ -20,7 +20,7 @@
 namespace CircleDetection {
 
 template <typename scalar_T>
-Eigen::Vector<scalar_T, 3> fit_circle_lsq(Eigen::Array<scalar_T, Eigen::Dynamic, 2> xy) {
+Eigen::Vector<scalar_T, 3> fit_circle_lsq(Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 2>> xy) {
   Eigen::Vector<scalar_T, 2> origin = xy.colwise().mean().matrix();
   xy = xy.rowwise() - origin.transpose().array();
 
@@ -58,15 +58,26 @@ Eigen::Vector<scalar_T, 3> fit_circle_lsq(Eigen::Array<scalar_T, Eigen::Dynamic,
 }
 
 template <typename scalar_T>
-std::tuple<Eigen::Array<scalar_T, Eigen::Dynamic, 3>, Eigen::Array<scalar_T, Eigen::Dynamic, 1>,
-           Eigen::Array<int64_t, Eigen::Dynamic, 1>>
+std::tuple<
+    Eigen::Array<scalar_T, Eigen::Dynamic, 3>,
+    Eigen::Array<scalar_T, Eigen::Dynamic, 1>,
+    Eigen::Array<int64_t, Eigen::Dynamic, 1>>
 detect_circles_ransac(
-    Eigen::Array<scalar_T, Eigen::Dynamic, 2> xy, Eigen::Array<int64_t, Eigen::Dynamic, 1> batch_lengths,
-    Eigen::Array<scalar_T, Eigen::Dynamic, 1> break_min_x, Eigen::Array<scalar_T, Eigen::Dynamic, 1> break_max_x,
-    Eigen::Array<scalar_T, Eigen::Dynamic, 1> break_min_y, Eigen::Array<scalar_T, Eigen::Dynamic, 1> break_max_y,
-    Eigen::Array<scalar_T, Eigen::Dynamic, 1> break_min_radius,
-    Eigen::Array<scalar_T, Eigen::Dynamic, 1> break_max_radius, scalar_T bandwidth, int iterations, int num_samples,
-    int min_concensus_points = 3, scalar_T min_fitting_score = 1e-6, int num_workers = 1, int seed = -1) {
+    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 2>> xy,
+    Eigen::Ref<Eigen::Array<int64_t, Eigen::Dynamic, 1>> batch_lengths,
+    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_min_x,
+    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_max_x,
+    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_min_y,
+    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_max_y,
+    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_min_radius,
+    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_max_radius,
+    scalar_T bandwidth,
+    int iterations,
+    int num_samples,
+    int min_concensus_points = 3,
+    scalar_T min_fitting_score = 1e-6,
+    int num_workers = 1,
+    int seed = -1) {
   if (num_samples < 3) {
     throw std::invalid_argument("The required number of hypothetical inlier points must be at least 3.");
   }
@@ -125,6 +136,13 @@ detect_circles_ransac(
     random_generators.push_back(std::mt19937(seed));
   }
 
+  std::vector<Eigen::Array<scalar_T, Eigen::Dynamic, 2>> xy_per_batch(num_batches);
+
+#pragma omp parallel for num_threads(num_workers)
+  for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
+    xy_per_batch[batch_idx] = xy(Eigen::seqN(batch_starts(batch_idx), batch_lengths(batch_idx)), Eigen::all);
+  }
+
 #pragma omp parallel num_threads(num_workers)
 #pragma omp single
   for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
@@ -134,11 +152,9 @@ detect_circles_ransac(
     for (int64_t i = 0; i < iterations; ++i) {
 #pragma omp task
       {
-        Eigen::Array<scalar_T, Eigen::Dynamic, 2> current_xy =
-            xy(Eigen::seqN(batch_starts(batch_idx), batch_lengths(batch_idx)), Eigen::all);
-        int samples_to_draw = std::min(num_samples, static_cast<int>(current_xy.rows()));
+        int samples_to_draw = std::min(num_samples, static_cast<int>(xy_per_batch[batch_idx].rows()));
 
-        std::vector<int64_t> indices(current_xy.rows());
+        std::vector<int64_t> indices(xy_per_batch[batch_idx].rows());
         std::iota(indices.begin(), indices.end(), 0);
 
         std::shuffle(indices.begin(), indices.end(), random_generators[batch_idx]);
@@ -146,7 +162,7 @@ detect_circles_ransac(
         std::vector<int64_t> hypothetical_inliers_indices(indices.begin(), indices.begin() + samples_to_draw);
 
         Eigen::Array<scalar_T, Eigen::Dynamic, 2> hypothetical_inliers_xy =
-            current_xy(hypothetical_inliers_indices, Eigen::all);
+            xy_per_batch[batch_idx](hypothetical_inliers_indices, Eigen::all);
 
         Eigen::Vector<scalar_T, 3> circle = fit_circle_lsq<scalar_T>(hypothetical_inliers_xy);
 
@@ -159,12 +175,12 @@ detect_circles_ransac(
           }
           // dists to circle center
           Eigen::Array<scalar_T, Eigen::Dynamic, 1> dists_to_circle =
-              (current_xy.rowwise() - circle({0, 1}).transpose().array()).rowwise().norm();
+              (xy_per_batch[batch_idx].rowwise() - circle({0, 1}).transpose().array()).rowwise().norm();
           // dists to circle outline
           dists_to_circle = (dists_to_circle - circle(2)).abs();
 
           std::vector<int64_t> consensus_indices;
-          for (int64_t j = 0; j < current_xy.rows(); ++j) {
+          for (int64_t j = 0; j < xy_per_batch[batch_idx].rows(); ++j) {
             if (dists_to_circle(j) <= bandwidth) {
               consensus_indices.push_back(j);
             }
@@ -172,7 +188,8 @@ detect_circles_ransac(
           if (consensus_indices.size() < min_concensus_points) {
             break;
           }
-          Eigen::Array<scalar_T, Eigen::Dynamic, 2> consensus_xy = current_xy(consensus_indices, Eigen::all);
+          Eigen::Array<scalar_T, Eigen::Dynamic, 2> consensus_xy =
+              xy_per_batch[batch_idx](consensus_indices, Eigen::all);
 
           // fit circle to all consensus points
           circle = fit_circle_lsq<scalar_T>(consensus_xy);
@@ -182,7 +199,7 @@ detect_circles_ransac(
           }
 
           // dists to circle center
-          dists_to_circle = (current_xy.rowwise() - circle({0, 1}).transpose().array()).rowwise().norm();
+          dists_to_circle = (xy_per_batch[batch_idx].rowwise() - circle({0, 1}).transpose().array()).rowwise().norm();
           // dists to circle outline
           dists_to_circle = (dists_to_circle - circle(2)).abs();
 
@@ -218,8 +235,8 @@ detect_circles_ransac(
     }
   }
 
-  return std::make_tuple(circles(selected_indices, Eigen::all), fitting_scores(selected_indices),
-                         batch_lengths_circles);
+  return std::make_tuple(
+      circles(selected_indices, Eigen::all), fitting_scores(selected_indices), batch_lengths_circles);
 }
 }  // namespace CircleDetection
 

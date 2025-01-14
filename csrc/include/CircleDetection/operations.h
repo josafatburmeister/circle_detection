@@ -14,16 +14,19 @@
 namespace CircleDetection {
 
 template <typename scalar_T>
-scalar_T stddev(Eigen::Array<scalar_T, Eigen::Dynamic, 2> x) {
+scalar_T stddev(Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 2>> x) {
   scalar_T variance = (x - x.mean()).square().mean();
   return std::sqrt(variance);
 }
 
 template <typename scalar_T>
 Eigen::Array<scalar_T, Eigen::Dynamic, 1> circumferential_completeness_index(
-    Eigen::Array<scalar_T, Eigen::Dynamic, 3> circles, Eigen::Array<scalar_T, Eigen::Dynamic, 2> xy,
-    Eigen::Array<int64_t, Eigen::Dynamic, 1> batch_lengths_circles,
-    Eigen::Array<int64_t, Eigen::Dynamic, 1> batch_lengths_xy, int64_t num_regions, scalar_T max_dist,
+    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 3>> circles,
+    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 2>> xy,
+    Eigen::Ref<Eigen::Array<int64_t, Eigen::Dynamic, 1>> batch_lengths_circles,
+    Eigen::Ref<Eigen::Array<int64_t, Eigen::Dynamic, 1>> batch_lengths_xy,
+    int64_t num_regions,
+    scalar_T max_dist,
     int num_workers = 1) {
   if (batch_lengths_circles.rows() != batch_lengths_xy.rows()) {
     throw std::invalid_argument("The length of batch_lengths_circles and batch_lengths_xy must be equal.");
@@ -108,17 +111,22 @@ Eigen::Array<scalar_T, Eigen::Dynamic, 1> circumferential_completeness_index(
 }
 
 template <typename scalar_T>
-std::tuple<Eigen::Array<scalar_T, Eigen::Dynamic, 3>, Eigen::Array<int64_t, Eigen::Dynamic, 1>,
-           Eigen::Array<int64_t, Eigen::Dynamic, 1>>
-filter_circumferential_completeness_index(Eigen::Array<scalar_T, Eigen::Dynamic, 3> circles,
-                                          Eigen::Array<scalar_T, Eigen::Dynamic, 2> xy,
-                                          Eigen::Array<int64_t, Eigen::Dynamic, 1> batch_lengths_circles,
-                                          Eigen::Array<int64_t, Eigen::Dynamic, 1> batch_lengths_xy,
-                                          int64_t num_regions, scalar_T max_dist,
-                                          scalar_T min_circumferential_completeness_index, int num_workers = 1) {
+std::tuple<
+    Eigen::Array<scalar_T, Eigen::Dynamic, 3>,
+    Eigen::Array<int64_t, Eigen::Dynamic, 1>,
+    Eigen::Array<int64_t, Eigen::Dynamic, 1>>
+filter_circumferential_completeness_index(
+    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 3>> circles,
+    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 2>> xy,
+    Eigen::Ref<Eigen::Array<int64_t, Eigen::Dynamic, 1>> batch_lengths_circles,
+    Eigen::Ref<Eigen::Array<int64_t, Eigen::Dynamic, 1>> batch_lengths_xy,
+    int64_t num_regions,
+    scalar_T max_dist,
+    scalar_T min_circumferential_completeness_index,
+    int num_workers = 1) {
   Eigen::Array<scalar_T, Eigen::Dynamic, 1> circumferential_completeness_indices =
-      circumferential_completeness_index<scalar_T>(circles, xy, batch_lengths_circles, batch_lengths_xy, num_regions,
-                                                   max_dist, num_workers);
+      circumferential_completeness_index<scalar_T>(
+          circles, xy, batch_lengths_circles, batch_lengths_xy, num_regions, max_dist, num_workers);
   int64_t num_batches = batch_lengths_circles.size();
 
   std::vector<int64_t> filtered_indices = {};
@@ -147,11 +155,16 @@ filter_circumferential_completeness_index(Eigen::Array<scalar_T, Eigen::Dynamic,
 }
 
 template <typename scalar_T>
-std::tuple<Eigen::Array<scalar_T, Eigen::Dynamic, 3>, Eigen::Array<scalar_T, Eigen::Dynamic, 1>,
-           Eigen::Array<int64_t, Eigen::Dynamic, 1>, Eigen::Array<int64_t, Eigen::Dynamic, 1>>
-non_maximum_suppression(Eigen::Array<scalar_T, Eigen::Dynamic, 3> circles,
-                        Eigen::Array<scalar_T, Eigen::Dynamic, 1> fitting_scores,
-                        Eigen::Array<int64_t, Eigen::Dynamic, 1> batch_lengths, int num_workers = 1) {
+std::tuple<
+    Eigen::Array<scalar_T, Eigen::Dynamic, 3>,
+    Eigen::Array<scalar_T, Eigen::Dynamic, 1>,
+    Eigen::Array<int64_t, Eigen::Dynamic, 1>,
+    Eigen::Array<int64_t, Eigen::Dynamic, 1>>
+non_maximum_suppression(
+    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 3>> circles,
+    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> fitting_scores,
+    Eigen::Ref<Eigen::Array<int64_t, Eigen::Dynamic, 1>> batch_lengths,
+    int num_workers = 1) {
   if (circles.rows() != fitting_scores.rows()) {
     throw std::invalid_argument("circles and fitting_scores must have the same number of entries.");
   }
@@ -232,8 +245,8 @@ non_maximum_suppression(Eigen::Array<scalar_T, Eigen::Dynamic, 3> circles,
     selected_fitting_scores(Eigen::seqN(new_batch_starts(batch_idx), new_batch_lengths(batch_idx))) =
         fitting_scores(selected_indices[batch_idx]);
     selected_indices_array(Eigen::seqN(new_batch_starts(batch_idx), new_batch_lengths(batch_idx))) =
-        Eigen::Map<Eigen::Array<int64_t, Eigen::Dynamic, 1>>(selected_indices[batch_idx].data(),
-                                                             new_batch_lengths(batch_idx));
+        Eigen::Map<Eigen::Array<int64_t, Eigen::Dynamic, 1>>(
+            selected_indices[batch_idx].data(), new_batch_lengths(batch_idx));
   }
 
   return std::make_tuple(selected_circles, selected_fitting_scores, new_batch_lengths, selected_indices_array);

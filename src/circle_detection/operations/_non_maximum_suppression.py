@@ -26,7 +26,9 @@ def non_maximum_suppression(
 
     Args:
         circles: Parameters of the circles to which apply non-maximum suppression (in the following order:
-            x-coordinate of the center, y-coordinate of the center, radius).
+            x-coordinate of the center, y-coordinate of the center, radius). If the :code:`circles` array has a
+            row-major storage layout (`numpy's <https://numpy.org/doc/stable/dev/internals.html>`__ default) a copy of
+            the array is created. To pass :code:`circles` by reference, :code:`circles` must be in column-major format.
         fitting_scores: Fitting scores of the circles to which apply non-maximum suppression (higher means better).
         batch_lengths: Number of circles in each item of the input batch. For batch processing, it is expected that
             all circles and fitting scores belonging to the same batch item are stored consecutively in the respective
@@ -60,6 +62,9 @@ def non_maximum_suppression(
         | :math:`C = \text{ number of circles before applying non-maximum suppression}`
         | :math:`C' = \text{ number of circles after applying non-maximum suppression}`
     """
+    if not circles.flags.f_contiguous:
+        circles = circles.copy(order="F")  # ensure that the input array is in column-major format
+
     if batch_lengths is None:
         batch_lengths = np.array([len(circles)], dtype=np.int64)
 

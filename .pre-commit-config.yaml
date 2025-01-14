@@ -24,7 +24,8 @@ repos:
     types: [python]
     args:
         [
-          --rcfile=.rcfile
+          --rcfile=.rcfile,
+          --disable=duplicate-code,
         ]
 - repo: local
   hooks:
