@@ -276,7 +276,7 @@ class Ransac(CircleDetector):
                 )
                 for (batch_start, batch_end) in zip(batch_starts, batch_ends)
             ],
-            dtype=xy.dtype
+            dtype=xy.dtype,
         )
 
         if break_min_radius is None:
