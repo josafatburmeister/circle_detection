@@ -54,7 +54,7 @@ class TestCircleDetector:
         )
 
         if not pass_bandwidth:
-            delattr(circle_detector, "_bandwidth")
+            delattr(circle_detector, "_bandwidth")  # pylint: disable=protected-access
 
         circle_detector.filter(
             max_circles=1,
