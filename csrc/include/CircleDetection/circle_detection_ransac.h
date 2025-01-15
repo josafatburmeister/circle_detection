@@ -13,6 +13,7 @@
 
 #include "loss_functions.h"
 #include "operations.h"
+#include "type_aliases.h"
 
 #ifndef CIRCLE_DETECTION_RANSAC_H
 #define CIRCLE_DETECTION_RANSAC_H
@@ -20,34 +21,33 @@
 namespace CircleDetection {
 
 template <typename scalar_T>
-Eigen::Vector<scalar_T, 3> fit_circle_lsq(Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 2>> xy) {
-  Eigen::Vector<scalar_T, 2> origin = xy.colwise().mean().matrix();
-  xy = xy.rowwise() - origin.transpose().array();
+Vector3<scalar_T> fit_circle_lsq(RefArrayX2<scalar_T> xy) {
+  RowVector2<scalar_T> origin = xy.colwise().mean().matrix();
+  xy = xy.rowwise() - origin.array();
 
   scalar_T scale = stddev(xy);
   scale = scale < 1e-20 ? 1.0 : scale;
 
   xy = xy / scale;
 
-  Eigen::Matrix<scalar_T, Eigen::Dynamic, 3> A(xy.rows(), 3);
+  MatrixX3<scalar_T> A(xy.rows(), 3);
   A(Eigen::all, {0, 1}) = xy * 2;
-  A(Eigen::all, {2}) = Eigen::Array<scalar_T, Eigen::Dynamic, 1>::Constant(xy.rows(), 1.0);
-  Eigen::Array<scalar_T, Eigen::Dynamic, 1> f = xy.rowwise().squaredNorm();
+  A(Eigen::all, {2}) = ArrayX<scalar_T>::Constant(xy.rows(), 1.0);
+  ArrayX<scalar_T> f = xy.rowwise().squaredNorm();
 
   auto qr = A.fullPivHouseholderQr();
 
   if (qr.rank() != 3) {
-    return Eigen::Vector<scalar_T, 3>::Constant(3, -1);
+    return Vector3<scalar_T>::Constant(3, -1);
   }
 
-  Eigen::Array<scalar_T, Eigen::Dynamic, 1> lsq_solution = qr.solve(f.matrix()).array();
+  ArrayX<scalar_T> lsq_solution = qr.solve(f.matrix()).array();
 
-  Eigen::Vector<scalar_T, 2> center = lsq_solution({0, 1});
-  Eigen::Array<scalar_T, Eigen::Dynamic, 1> squared_dists =
-      (xy.rowwise() - center.transpose().array()).rowwise().squaredNorm();
+  Vector2<scalar_T> center = lsq_solution({0, 1});
+  ArrayX<scalar_T> squared_dists = (xy.rowwise() - center.transpose().array()).rowwise().squaredNorm();
   scalar_T radius = std::sqrt(squared_dists.mean());
 
-  Eigen::Vector<scalar_T, 3> circle;
+  Vector3<scalar_T> circle;
 
   circle({0, 1}) = center;
   circle(2) = radius;
@@ -58,19 +58,15 @@ Eigen::Vector<scalar_T, 3> fit_circle_lsq(Eigen::Ref<Eigen::Array<scalar_T, Eige
 }
 
 template <typename scalar_T>
-std::tuple<
-    Eigen::Array<scalar_T, Eigen::Dynamic, 3>,
-    Eigen::Array<scalar_T, Eigen::Dynamic, 1>,
-    Eigen::Array<int64_t, Eigen::Dynamic, 1>>
-detect_circles_ransac(
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 2>> xy,
-    Eigen::Ref<Eigen::Array<int64_t, Eigen::Dynamic, 1>> batch_lengths,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_min_x,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_max_x,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_min_y,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_max_y,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_min_radius,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_max_radius,
+std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_ransac(
+    RefArrayX2<scalar_T> xy,
+    RefArrayXl batch_lengths,
+    RefArrayX<scalar_T> break_min_x,
+    RefArrayX<scalar_T> break_max_x,
+    RefArrayX<scalar_T> break_min_y,
+    RefArrayX<scalar_T> break_max_y,
+    RefArrayX<scalar_T> break_min_radius,
+    RefArrayX<scalar_T> break_max_radius,
     scalar_T bandwidth,
     int iterations,
     int num_samples,
@@ -115,11 +111,9 @@ detect_circles_ransac(
 
   int64_t num_batches = batch_lengths.rows();
   int64_t num_circles = num_batches * iterations;
-  Eigen::Array<scalar_T, Eigen::Dynamic, 3> circles =
-      Eigen::Array<scalar_T, Eigen::Dynamic, 3>::Constant(num_circles, 3, -1);
-  Eigen::Array<bool, Eigen::Dynamic, 1> diverged = Eigen::Array<bool, Eigen::Dynamic, 1>::Constant(num_circles, true);
-  Eigen::Array<scalar_T, Eigen::Dynamic, 1> fitting_scores =
-      Eigen::Array<scalar_T, Eigen::Dynamic, 1>::Constant(num_circles, -1);
+  ArrayX3<scalar_T> circles = ArrayX3<scalar_T>::Constant(num_circles, 3, -1);
+  ArrayXb diverged = ArrayXb::Constant(num_circles, true);
+  ArrayX<scalar_T> fitting_scores = ArrayX<scalar_T>::Constant(num_circles, -1);
   std::vector<std::mt19937> random_generators(num_batches);
 
   if (seed == -1) {
@@ -127,7 +121,7 @@ detect_circles_ransac(
     seed = random_device();
   }
 
-  Eigen::Array<int64_t, Eigen::Dynamic, 1> batch_starts(num_batches);
+  ArrayXl batch_starts(num_batches);
 
   int64_t batch_start = 0;
   for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
@@ -136,7 +130,7 @@ detect_circles_ransac(
     random_generators.push_back(std::mt19937(seed));
   }
 
-  std::vector<Eigen::Array<scalar_T, Eigen::Dynamic, 2>> xy_per_batch(num_batches);
+  std::vector<ArrayX2<scalar_T>> xy_per_batch(num_batches);
 
 #pragma omp parallel for num_threads(num_workers)
   for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
@@ -161,10 +155,9 @@ detect_circles_ransac(
 
         std::vector<int64_t> hypothetical_inliers_indices(indices.begin(), indices.begin() + samples_to_draw);
 
-        Eigen::Array<scalar_T, Eigen::Dynamic, 2> hypothetical_inliers_xy =
-            xy_per_batch[batch_idx](hypothetical_inliers_indices, Eigen::all);
+        ArrayX2<scalar_T> hypothetical_inliers_xy = xy_per_batch[batch_idx](hypothetical_inliers_indices, Eigen::all);
 
-        Eigen::Vector<scalar_T, 3> circle = fit_circle_lsq<scalar_T>(hypothetical_inliers_xy);
+        Vector3<scalar_T> circle = fit_circle_lsq<scalar_T>(hypothetical_inliers_xy);
 
         for (int step = 0; step < 1;
              ++step) {  // we use a for loop with a single iteration so that we can use break to exit early
@@ -174,7 +167,7 @@ detect_circles_ransac(
             break;
           }
           // dists to circle center
-          Eigen::Array<scalar_T, Eigen::Dynamic, 1> dists_to_circle =
+          ArrayX<scalar_T> dists_to_circle =
               (xy_per_batch[batch_idx].rowwise() - circle({0, 1}).transpose().array()).rowwise().norm();
           // dists to circle outline
           dists_to_circle = (dists_to_circle - circle(2)).abs();
@@ -188,8 +181,7 @@ detect_circles_ransac(
           if (consensus_indices.size() < min_concensus_points) {
             break;
           }
-          Eigen::Array<scalar_T, Eigen::Dynamic, 2> consensus_xy =
-              xy_per_batch[batch_idx](consensus_indices, Eigen::all);
+          ArrayX2<scalar_T> consensus_xy = xy_per_batch[batch_idx](consensus_indices, Eigen::all);
 
           // fit circle to all consensus points
           circle = fit_circle_lsq<scalar_T>(consensus_xy);
@@ -222,8 +214,7 @@ detect_circles_ransac(
   }
 
   std::vector<int64_t> selected_indices;
-  Eigen::Array<int64_t, Eigen::Dynamic, 1> batch_lengths_circles =
-      Eigen::Array<int64_t, Eigen::Dynamic, 1>::Constant(num_batches, 0);
+  ArrayXl batch_lengths_circles = ArrayXl::Constant(num_batches, 0);
 
   for (int64_t i = 0; i < num_batches; ++i) {
     for (int64_t j = 0; j < iterations; ++j) {

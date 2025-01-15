@@ -9,6 +9,7 @@
 
 #include "loss_functions.h"
 #include "operations.h"
+#include "type_aliases.h"
 
 #ifndef CIRCLE_DETECTION_M_ESTIMATOR_H
 #define CIRCLE_DETECTION_M_ESTIMATOR_H
@@ -16,29 +17,25 @@
 namespace CircleDetection {
 
 template <typename scalar_T>
-std::tuple<
-    Eigen::Array<scalar_T, Eigen::Dynamic, 3>,
-    Eigen::Array<scalar_T, Eigen::Dynamic, 1>,
-    Eigen::Array<int64_t, Eigen::Dynamic, 1>>
-detect_circles_m_estimator(
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 2>> xy,
-    Eigen::Ref<Eigen::Array<int64_t, Eigen::Dynamic, 1>> batch_lengths,
+std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estimator(
+    RefArrayX2<scalar_T> xy,
+    RefArrayXl batch_lengths,
     scalar_T bandwidth,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> min_start_x,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> max_start_x,
+    RefArrayX<scalar_T> min_start_x,
+    RefArrayX<scalar_T> max_start_x,
     int n_start_x,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> min_start_y,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> max_start_y,
+    RefArrayX<scalar_T> min_start_y,
+    RefArrayX<scalar_T> max_start_y,
     int n_start_y,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> min_start_radius,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> max_start_radius,
+    RefArrayX<scalar_T> min_start_radius,
+    RefArrayX<scalar_T> max_start_radius,
     int n_start_radius,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_min_x,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_max_x,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_min_y,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_max_y,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_min_radius,
-    Eigen::Ref<Eigen::Array<scalar_T, Eigen::Dynamic, 1>> break_max_radius,
+    RefArrayX<scalar_T> break_min_x,
+    RefArrayX<scalar_T> break_max_x,
+    RefArrayX<scalar_T> break_min_y,
+    RefArrayX<scalar_T> break_max_y,
+    RefArrayX<scalar_T> break_min_radius,
+    RefArrayX<scalar_T> break_max_radius,
     scalar_T break_min_change = 1e-5,
     int max_iterations = 1000,
     scalar_T acceleration_factor = 1.6,
@@ -96,8 +93,8 @@ detect_circles_m_estimator(
 
   auto num_batches = batch_lengths.rows();
 
-  Eigen::Array<int64_t, Eigen::Dynamic, 1> batch_starts(num_batches);
-  Eigen::Array<scalar_T, Eigen::Dynamic, 2> offsets(num_batches, 2);
+  ArrayXl batch_starts(num_batches);
+  ArrayX2<scalar_T> offsets(num_batches, 2);
 
   int64_t batch_start = 0;
   for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
@@ -105,16 +102,15 @@ detect_circles_m_estimator(
     batch_start += batch_lengths(batch_idx);
   }
 
-  std::vector<Eigen::Array<scalar_T, Eigen::Dynamic, 2>> xy_per_batch(num_batches);
+  std::vector<ArrayX2<scalar_T>> xy_per_batch(num_batches);
 
 // to improve the numerical stability the data are shifted before the circle detection
 // after circle detection, the inverse of the normalization is applied to the circle parameters
 #pragma omp parallel for num_threads(num_workers)
   for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     if (batch_lengths(batch_idx) > 0) {
-      Eigen::Array<scalar_T, Eigen::Dynamic, 2> current_xy =
-          xy(Eigen::seqN(batch_starts(batch_idx), batch_lengths(batch_idx)), Eigen::all);
-      Eigen::Array<scalar_T, Eigen::Dynamic, 1> offset = current_xy.colwise().mean();
+      ArrayX2<scalar_T> current_xy = xy(Eigen::seqN(batch_starts(batch_idx), batch_lengths(batch_idx)), Eigen::all);
+      ArrayX<scalar_T> offset = current_xy.colwise().mean();
       offsets(batch_idx, Eigen::all) = offset;
 
       xy_per_batch[batch_idx] = current_xy.rowwise() - offsets(batch_idx, Eigen::all);
@@ -129,27 +125,25 @@ detect_circles_m_estimator(
     }
   }
 
-  Eigen::Array<scalar_T, Eigen::Dynamic, 1> start_radii(num_batches * n_start_radius);
-  Eigen::Array<scalar_T, Eigen::Dynamic, 1> start_centers_x(num_batches * n_start_x);
-  Eigen::Array<scalar_T, Eigen::Dynamic, 1> start_centers_y(num_batches * n_start_y);
+  ArrayX<scalar_T> start_radii(num_batches * n_start_radius);
+  ArrayX<scalar_T> start_centers_x(num_batches * n_start_x);
+  ArrayX<scalar_T> start_centers_y(num_batches * n_start_y);
   scalar_T eps = 0.01 * min_step_size;
 
 #pragma omp parallel for num_threads(num_workers)
   for (int64_t i = 0; i < num_batches; ++i) {
     start_radii.segment(i * n_start_radius, n_start_radius) =
-        Eigen::Array<scalar_T, Eigen::Dynamic, 1>::LinSpaced(n_start_radius, min_start_radius(i), max_start_radius(i));
+        ArrayX<scalar_T>::LinSpaced(n_start_radius, min_start_radius(i), max_start_radius(i));
     start_centers_x(Eigen::seqN(i * n_start_x, n_start_x)) =
-        Eigen::Array<scalar_T, Eigen::Dynamic, 1>::LinSpaced(n_start_x, min_start_x(i), max_start_x(i));
+        ArrayX<scalar_T>::LinSpaced(n_start_x, min_start_x(i), max_start_x(i));
     start_centers_y(Eigen::seqN(i * n_start_y, n_start_y)) =
-        Eigen::Array<scalar_T, Eigen::Dynamic, 1>::LinSpaced(n_start_y, min_start_y(i), max_start_y(i));
+        ArrayX<scalar_T>::LinSpaced(n_start_y, min_start_y(i), max_start_y(i));
   }
 
-  Eigen::Array<scalar_T, Eigen::Dynamic, 3> fitted_circles =
-      Eigen::Array<scalar_T, Eigen::Dynamic, 3>::Constant(num_batches * n_start_radius * n_start_x * n_start_y, 3, -1);
-  Eigen::Array<bool, Eigen::Dynamic, 1> fitting_converged =
-      Eigen::Array<bool, Eigen::Dynamic, 1>::Zero(num_batches * n_start_radius * n_start_x * n_start_y);
-  Eigen::Array<scalar_T, Eigen::Dynamic, 1> fitting_scores =
-      Eigen::Array<scalar_T, Eigen::Dynamic, 1>::Constant(num_batches * n_start_radius * n_start_x * n_start_y, 0);
+  ArrayX3<scalar_T> fitted_circles =
+      ArrayX3<scalar_T>::Constant(num_batches * n_start_radius * n_start_x * n_start_y, 3, -1);
+  ArrayXb fitting_converged = ArrayXb::Zero(num_batches * n_start_radius * n_start_x * n_start_y);
+  ArrayX<scalar_T> fitting_scores = ArrayX<scalar_T>::Constant(num_batches * n_start_radius * n_start_x * n_start_y, 0);
 
 #pragma omp parallel num_threads(num_workers)
 #pragma omp single
@@ -177,51 +171,50 @@ detect_circles_m_estimator(
 
             auto start_center_x = start_centers_x[idx_batch * n_start_x + idx_x];
             auto start_center_y = start_centers_y[idx_batch * n_start_y + idx_y];
-            Eigen::RowVector<scalar_T, 2> center(start_center_x, start_center_y);
+            RowVector2<scalar_T> center(start_center_x, start_center_y);
 
             scalar_T fitting_loss = 0;
             scalar_T fitting_score = 0;
             bool diverged = false;
 
             for (int iteration = 0; iteration < max_iterations; ++iteration) {
-              Eigen::Array<scalar_T, Eigen::Dynamic, 1> squared_dists_to_center =
+              ArrayX<scalar_T> squared_dists_to_center =
                   (xy_per_batch[idx_batch].matrix().rowwise() - center).rowwise().squaredNorm().array();
-              Eigen::Array<scalar_T, Eigen::Dynamic, 1> dists_to_center = squared_dists_to_center.array().sqrt();
-              Eigen::Array<scalar_T, Eigen::Dynamic, 1> scaled_residuals = (dists_to_center - radius) / bandwidth;
+              ArrayX<scalar_T> dists_to_center = squared_dists_to_center.array().sqrt();
+              ArrayX<scalar_T> scaled_residuals = (dists_to_center - radius) / bandwidth;
               fitting_loss = scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<scalar_T>).mean();
 
               // first derivative of the outer term of the loss function
-              Eigen::Array<scalar_T, Eigen::Dynamic, 1> outer_derivative_1 =
+              ArrayX<scalar_T> outer_derivative_1 =
                   scaled_residuals.unaryExpr(&CircleDetection::loss_fn_derivative_1_scalar<scalar_T>);
 
               // second derivative of the outer term of the loss function
-              Eigen::Array<scalar_T, Eigen::Dynamic, 1> outer_derivative_2 =
+              ArrayX<scalar_T> outer_derivative_2 =
                   scaled_residuals.unaryExpr(&CircleDetection::loss_fn_derivative_2_scalar<scalar_T>);
 
               // first derivative of the inner term of the loss function
               // this array stores the derivatives dx and dy in different columns
-              Eigen::Array<scalar_T, Eigen::Dynamic, 2> inner_derivative_1_x =
-                  (-1 / (bandwidth * dists_to_center)).replicate(1, 2) *
-                  (xy_per_batch[idx_batch].matrix().rowwise() - center).array();
+              ArrayX2<scalar_T> inner_derivative_1_x = (-1 / (bandwidth * dists_to_center)).replicate(1, 2) *
+                                                       (xy_per_batch[idx_batch].matrix().rowwise() - center).array();
               scalar_T inner_derivative_1_r = -1 / bandwidth;
 
               // second derivative of the inner term of the loss function
               // this array stores the derivatives dxdx and dydy in different columns
-              Eigen::Array<scalar_T, Eigen::Dynamic, 2> inner_derivative_2_x_x =
+              ArrayX2<scalar_T> inner_derivative_2_x_x =
                   1 / bandwidth *
                   (-1 / (squared_dists_to_center * dists_to_center).replicate(1, 2) *
                        (xy_per_batch[idx_batch].matrix().rowwise() - center).array().square() +
                    1 / dists_to_center.replicate(1, 2));
               // this array stores the derivatives dxdy and dydx in one column (both are identical)
-              Eigen::Array<scalar_T, Eigen::Dynamic, 1> inner_derivative_2_x_y =
+              ArrayX<scalar_T> inner_derivative_2_x_y =
                   -1 / bandwidth * 1 / (squared_dists_to_center * dists_to_center) *
                   (xy_per_batch[idx_batch].col(0) - center[0]) * (xy_per_batch[idx_batch].col(1) - center[1]);
 
               // first derivatives of the entire loss function with respect to the circle parameters
-              Eigen::RowVector<scalar_T, 2> derivative_xy =
+              RowVector2<scalar_T> derivative_xy =
                   (outer_derivative_1.replicate(1, 2) * inner_derivative_1_x).matrix().colwise().mean();
               scalar_T derivative_r = (outer_derivative_1 * inner_derivative_1_r).matrix().mean();
-              Eigen::Vector<scalar_T, 3> gradient(derivative_xy[0], derivative_xy[1], derivative_r);
+              Vector3<scalar_T> gradient(derivative_xy[0], derivative_xy[1], derivative_r);
 
               // second derivatives of the entire loss function with respect to the circle parameters
               scalar_T derivative_x_x = ((outer_derivative_2 * inner_derivative_1_x.col(0).square()) +
@@ -255,7 +248,7 @@ detect_circles_m_estimator(
               scalar_T derivative_r_r =
                   (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_r).matrix().mean();
 
-              Eigen::Matrix<scalar_T, Eigen::Dynamic, 3> hessian(3, 3);
+              MatrixX3<scalar_T> hessian(3, 3);
               hessian << derivative_x_x, derivative_x_y, derivative_x_r, derivative_y_x, derivative_y_y, derivative_y_r,
                   derivative_r_x, derivative_r_y, derivative_r_r;
 
@@ -265,7 +258,7 @@ detect_circles_m_estimator(
                   derivative_x_x * derivative_y_y - derivative_x_y * derivative_y_x;
 
               scalar_T step_size = 1.0;
-              Eigen::Array<scalar_T, Eigen::Dynamic, 1> step_direction(3);
+              ArrayX<scalar_T> step_direction(3);
               if ((determinant_hessian > 0) && (determinant_hessian_submatrix > 0)) {
                 step_direction = -1 * (hessian.inverse() * gradient).array();
               } else {
@@ -275,7 +268,7 @@ detect_circles_m_estimator(
                 scalar_T next_step_size = 1.0;
                 auto next_center = center + (next_step_size * step_direction.head(2)).matrix().transpose();
                 auto next_radius = radius + (next_step_size * step_direction[2]);
-                Eigen::Array<scalar_T, Eigen::Dynamic, 1> next_scaled_residuals =
+                ArrayX<scalar_T> next_scaled_residuals =
                     ((xy_per_batch[idx_batch].matrix().rowwise() - next_center).rowwise().norm().array() -
                      next_radius) /
                     bandwidth;
@@ -290,7 +283,7 @@ detect_circles_m_estimator(
 
                   auto next_center = center + (next_step_size * step_direction.head(2)).matrix().transpose();
                   auto next_radius = radius + (next_step_size * step_direction[2]);
-                  Eigen::Array<scalar_T, Eigen::Dynamic, 1> next_scaled_residuals =
+                  ArrayX<scalar_T> next_scaled_residuals =
                       ((xy_per_batch[idx_batch].matrix().rowwise() - next_center).rowwise().norm().array() -
                        next_radius) /
                       bandwidth;
@@ -314,7 +307,7 @@ detect_circles_m_estimator(
 
                   auto next_center = center + (step_size * step_direction.head(2)).matrix().transpose();
                   auto next_radius = radius + (step_size * step_direction[2]);
-                  Eigen::Array<scalar_T, Eigen::Dynamic, 1> next_scaled_residuals =
+                  ArrayX<scalar_T> next_scaled_residuals =
                       ((xy_per_batch[idx_batch].matrix().rowwise() - next_center).rowwise().norm().array() -
                        next_radius) /
                       bandwidth;
@@ -365,8 +358,7 @@ detect_circles_m_estimator(
 
 #pragma omp taskwait
 
-  Eigen::Array<int64_t, Eigen::Dynamic, 1> batch_lengths_circles =
-      Eigen::Array<int64_t, Eigen::Dynamic, 1>::Constant(num_batches, 0);
+  ArrayXl batch_lengths_circles = ArrayXl::Constant(num_batches, 0);
   std::vector<int64_t> converged_indices;
 
   for (int64_t i = 0; i < fitted_circles.rows(); ++i) {
