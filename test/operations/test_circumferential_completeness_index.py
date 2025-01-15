@@ -100,9 +100,9 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
     def test_multi_threading(self):
         batch_size = 1000
         circles = np.array([[[0, 0, 1], [5, 0, 1]]], dtype=np.float64)
-        circles = np.repeat(circles, batch_size, axis=0).reshape(-1, 3)
+        circles = np.repeat(circles, batch_size, axis=0).reshape(-1, 3).copy(order="F")
         xy = np.array([[[0, 1], [0, -1], [1, 0], [-1, 0], [5, 1], [5, -1]]], dtype=np.float64)
-        xy = np.repeat(xy, batch_size, axis=0).reshape(-1, 2)
+        xy = np.repeat(xy, batch_size, axis=0).reshape(-1, 2).copy(order="F")
         batch_lengths_circles = np.array([2] * batch_size, dtype=np.int64)
         batch_lengths_xy = np.array([6] * batch_size, dtype=np.int64)
 
@@ -112,7 +112,7 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
         single_threaded_runtime = 0
         multi_threaded_runtime = 0
 
-        repetitions = 4
+        repetitions = 10
         for _ in range(repetitions):
             start = time.perf_counter()
             circumferential_completeness_index(
