@@ -237,7 +237,9 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
         :code:`self.circles`, :code:`self.fitting_scores`, and :code:`self.batch_lengths_circles`.
 
         Args:
-            xy: Coordinates of the set of 2D points in which to detect circles.
+            xy: Coordinates of the set of 2D points in which to detect circles. If the :code:`xy` array has a row-major
+                storage layout (`numpy's <https://numpy.org/doc/stable/dev/internals.html>`__ default), a copy of the
+                array is created. To pass :code:`xy` by reference, :code:`xy` must be in column-major format.
             batch_lengths: Number of points in each point set of the input batch. For batch processing, it is
                 expected that all points belonging to the same point set are stored consecutively in the :code:`xy`
                 input array. For example, if the input is a batch of two point sets (i.e., two batch items) with
@@ -374,6 +376,9 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
             | :math:`N = \text{ number of points}`
         """
 
+        if not xy.flags.f_contiguous:
+            xy = xy.copy(order="F")  # ensure that the input array is in column-major
+
         if batch_lengths is None:
             batch_lengths = np.array([len(xy)], dtype=np.int64)
         num_batches = len(batch_lengths)
@@ -497,7 +502,8 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
                         else 0.1
                     )
                     for (batch_start, batch_end) in zip(batch_starts, batch_ends)
-                ]
+                ],
+                dtype=xy.dtype,
             )
         elif not isinstance(max_start_radius, np.ndarray):
             max_start_radius = np.full(num_batches, fill_value=max_start_radius, dtype=xy.dtype)

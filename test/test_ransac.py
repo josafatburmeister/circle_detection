@@ -17,9 +17,10 @@ class TestRansac:
 
     @pytest.mark.parametrize("add_noise_points", [True, False])
     @pytest.mark.parametrize("seed", [1, None])
+    @pytest.mark.parametrize("storage_layout", ["C", "F"])
     @pytest.mark.parametrize("scalar_dtype", [np.float32, np.float64])
     def test_circle_fitting(  # pylint: disable=too-many-locals
-        self, add_noise_points: bool, seed: Optional[int], scalar_dtype: np.dtype
+        self, add_noise_points: bool, seed: Optional[int], storage_layout: str, scalar_dtype: np.dtype
     ):
         batch_size = 250
         circles = []
@@ -40,7 +41,7 @@ class TestRansac:
 
         ransac = Ransac(bandwidth=0.01, iterations=500)
         ransac.detect(
-            np.concatenate(xy).astype(scalar_dtype),
+            np.concatenate(xy).astype(scalar_dtype).copy(order=storage_layout),
             batch_lengths=np.array(batch_lengths, dtype=np.int64),
             num_workers=-1,
             seed=seed,
@@ -89,6 +90,19 @@ class TestRansac:
             multi_threaded_runtime += time.perf_counter() - start
 
         assert multi_threaded_runtime < single_threaded_runtime
+
+    def test_return_values_pass_by_reference(self):
+        original_circles = np.array([[0, 0, 0.5]])
+        xy = generate_circle_points(original_circles, min_points=100, max_points=100)
+        bandwidth = 0.05
+
+        circle_detector = Ransac(bandwidth=bandwidth)
+        circle_detector.detect(xy, num_workers=-1)
+        circle_detector.filter(max_circles=1, num_workers=-1)
+
+        # check that return values are passed by reference
+        assert circle_detector.circles.flags.owndata is False
+        assert circle_detector.fitting_scores.flags.owndata is False
 
     @pytest.mark.parametrize(
         "kwargs",

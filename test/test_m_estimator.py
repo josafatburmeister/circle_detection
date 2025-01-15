@@ -15,10 +15,12 @@ from test.utils import generate_circles, generate_circle_points  # pylint: disab
 class TestMEstimator:
     """Tests for :code:`circle_detection.MEstimator`."""
 
+    @pytest.mark.parametrize("storage_layout", ["C", "F"])
     @pytest.mark.parametrize("scalar_dtype", [np.float32, np.float64])
-    def test_circle_one_perfect_fit_and_one_noisy_circle(self, scalar_dtype: np.dtype):
+    def test_circle_one_perfect_fit_and_one_noisy_circle(self, storage_layout: str, scalar_dtype: np.dtype):
         original_circles = np.array([[0, 0, 0.5], [0, 2, 0.5]])
         xy = generate_circle_points(original_circles, min_points=100, max_points=100, variance=np.array([0, 0.05]))
+        xy = xy.copy(order=storage_layout)
         xy = xy.astype(scalar_dtype)
         bandwidth = 0.07
 
@@ -167,6 +169,19 @@ class TestMEstimator:
             multi_threaded_runtime += time.perf_counter() - start
 
         assert multi_threaded_runtime < single_threaded_runtime
+
+    def test_return_values_pass_by_reference(self):
+        original_circles = np.array([[0, 0, 0.5]])
+        xy = generate_circle_points(original_circles, min_points=100, max_points=100)
+        bandwidth = 0.05
+
+        circle_detector = MEstimator(bandwidth=bandwidth)
+        circle_detector.detect(xy, num_workers=-1)
+        circle_detector.filter(max_circles=1, num_workers=-1)
+
+        # check that return values are passed by reference
+        assert circle_detector.circles.flags.owndata is False
+        assert circle_detector.fitting_scores.flags.owndata is False
 
     def test_empty_input(self):
         xy = np.empty((0, 2), dtype=np.float64)
