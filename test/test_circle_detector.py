@@ -47,14 +47,14 @@ class TestCircleDetector:
 
         np.testing.assert_almost_equal(original_circles[0], circle_detector.circles[0], decimal=10)
 
-        circle_detector._bandwidth = bandwidth
+        circle_detector._bandwidth = bandwidth  # pylint: disable=protected-access
         circle_detector.detect(
             xy[:50],
             num_workers=1,
         )
 
         if not pass_bandwidth:
-            delattr(circle_detector, "_bandwidth")  # pylint: disable=protected-access
+            delattr(circle_detector, "_bandwidth")
 
         circle_detector.filter(
             max_circles=1,
