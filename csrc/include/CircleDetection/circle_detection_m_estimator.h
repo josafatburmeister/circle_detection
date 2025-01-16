@@ -104,8 +104,8 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
 
   std::vector<ArrayX2<scalar_T>> xy_per_batch(num_batches);
 
-// to improve the numerical stability the data are shifted before the circle detection
-// after circle detection, the inverse of the normalization is applied to the circle parameters
+  // to improve the numerical stability the data are shifted before the circle detection
+  // after circle detection, the inverse of the normalization is applied to the circle parameters
 #pragma omp parallel for num_threads(num_workers)
   for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     if (batch_lengths(batch_idx) > 0) {
@@ -113,7 +113,7 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
       ArrayX<scalar_T> offset = current_xy.colwise().mean();
       offsets(batch_idx, Eigen::all) = offset;
 
-      xy_per_batch[batch_idx] = current_xy.rowwise() - offsets(batch_idx, Eigen::all);
+      xy_per_batch[batch_idx] = current_xy.rowwise() - offset.transpose();
       min_start_x(batch_idx) = (min_start_x(batch_idx) - offset(0));
       max_start_x(batch_idx) = (max_start_x(batch_idx) - offset(0));
       min_start_y(batch_idx) = (min_start_y(batch_idx) - offset(1));
@@ -132,12 +132,15 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
 
 #pragma omp parallel for num_threads(num_workers)
   for (int64_t i = 0; i < num_batches; ++i) {
-    start_radii.segment(i * n_start_radius, n_start_radius) =
-        ArrayX<scalar_T>::LinSpaced(n_start_radius, min_start_radius(i), max_start_radius(i));
+    scalar_T offset_radius = (max_start_radius(i) - min_start_radius(i)) / static_cast<scalar_T>(n_start_radius + 1);
+    start_radii(Eigen::seqN(i * n_start_radius, n_start_radius)) = ArrayX<scalar_T>::LinSpaced(
+        n_start_radius, min_start_radius(i) + offset_radius, max_start_radius(i) - offset_radius);
+    scalar_T offset_x = (max_start_x(i) - min_start_x(i)) / static_cast<scalar_T>(n_start_x + 1);
     start_centers_x(Eigen::seqN(i * n_start_x, n_start_x)) =
-        ArrayX<scalar_T>::LinSpaced(n_start_x, min_start_x(i), max_start_x(i));
+        ArrayX<scalar_T>::LinSpaced(n_start_x, min_start_x(i) + offset_x, max_start_x(i) - offset_x);
+    scalar_T offset_y = (max_start_y(i) - min_start_y(i)) / static_cast<scalar_T>(n_start_y + 1);
     start_centers_y(Eigen::seqN(i * n_start_y, n_start_y)) =
-        ArrayX<scalar_T>::LinSpaced(n_start_y, min_start_y(i), max_start_y(i));
+        ArrayX<scalar_T>::LinSpaced(n_start_y, min_start_y(i) + offset_y, max_start_y(i) - offset_y);
   }
 
   ArrayX3<scalar_T> fitted_circles =
@@ -166,11 +169,11 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
 
 #pragma omp task
           {
-            auto start_radius = start_radii[idx_batch * n_start_radius + idx_radius];
-            auto radius = start_radius;
+            scalar_T start_radius = start_radii[idx_batch * n_start_radius + idx_radius];
+            scalar_T radius = start_radius;
 
-            auto start_center_x = start_centers_x[idx_batch * n_start_x + idx_x];
-            auto start_center_y = start_centers_y[idx_batch * n_start_y + idx_y];
+            scalar_T start_center_x = start_centers_x[idx_batch * n_start_x + idx_x];
+            scalar_T start_center_y = start_centers_y[idx_batch * n_start_y + idx_y];
             RowVector2<scalar_T> center(start_center_x, start_center_y);
 
             scalar_T fitting_loss = 0;
@@ -180,7 +183,7 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
             for (int iteration = 0; iteration < max_iterations; ++iteration) {
               ArrayX<scalar_T> squared_dists_to_center =
                   (xy_per_batch[idx_batch].matrix().rowwise() - center).rowwise().squaredNorm().array();
-              ArrayX<scalar_T> dists_to_center = squared_dists_to_center.array().sqrt();
+              ArrayX<scalar_T> dists_to_center = squared_dists_to_center.sqrt();
               ArrayX<scalar_T> scaled_residuals = (dists_to_center - radius) / bandwidth;
               fitting_loss = scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<scalar_T>).mean();
 
@@ -219,15 +222,13 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
               // second derivatives of the entire loss function with respect to the circle parameters
               scalar_T derivative_x_x = ((outer_derivative_2 * inner_derivative_1_x.col(0).square()) +
                                          (outer_derivative_1 * inner_derivative_2_x_x.col(0)))
-                                            .matrix()
                                             .mean();
               scalar_T derivative_x_y =
                   ((outer_derivative_2 * inner_derivative_1_x.col(1) * inner_derivative_1_x.col(0)) +
                    (outer_derivative_1 * inner_derivative_2_x_y))
-                      .matrix()
                       .mean();
               scalar_T derivative_x_r =
-                  (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_x.col(0)).matrix().mean();
+                  (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_x.col(0)).mean();
 
               scalar_T derivative_y_x =
                   ((outer_derivative_2 * inner_derivative_1_x.col(0) * inner_derivative_1_x.col(1)) +
@@ -236,17 +237,15 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
                       .mean();
               scalar_T derivative_y_y = ((outer_derivative_2 * inner_derivative_1_x.col(1).square()) +
                                          (outer_derivative_1 * inner_derivative_2_x_x.col(1)))
-                                            .matrix()
                                             .mean();
               scalar_T derivative_y_r =
-                  (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_x.col(1)).matrix().mean();
+                  (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_x.col(1)).mean();
 
               scalar_T derivative_r_x =
-                  (outer_derivative_2 * inner_derivative_1_x.col(0) * inner_derivative_1_r).matrix().mean();
+                  (outer_derivative_2 * inner_derivative_1_x.col(0) * inner_derivative_1_r).mean();
               scalar_T derivative_r_y =
-                  (outer_derivative_2 * inner_derivative_1_x.col(1) * inner_derivative_1_r).matrix().mean();
-              scalar_T derivative_r_r =
-                  (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_r).matrix().mean();
+                  (outer_derivative_2 * inner_derivative_1_x.col(1) * inner_derivative_1_r).mean();
+              scalar_T derivative_r_r = (outer_derivative_2 * inner_derivative_1_r * inner_derivative_1_r).mean();
 
               MatrixX3<scalar_T> hessian(3, 3);
               hessian << derivative_x_x, derivative_x_y, derivative_x_r, derivative_y_x, derivative_y_y, derivative_y_r,
