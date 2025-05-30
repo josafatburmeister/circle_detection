@@ -1,4 +1,4 @@
-""" RANSAC circle detection method. """
+"""RANSAC circle detection method."""
 
 __all__ = ["Ransac"]
 

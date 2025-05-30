@@ -1,4 +1,4 @@
-""" Tests for :code:`circle_detection.operations.non_maximum_suppression`. """
+"""Tests for :code:`circle_detection.operations.non_maximum_suppression`."""
 
 import multiprocessing
 import time

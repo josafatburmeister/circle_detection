@@ -1,4 +1,4 @@
-""" Tests for :code:`circle_detection.operations.select_top_k_circles`. """
+"""Tests for :code:`circle_detection.operations.select_top_k_circles`."""
 
 import numpy as np
 import pytest
