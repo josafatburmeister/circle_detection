@@ -132,15 +132,24 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
 
 #pragma omp parallel for num_threads(num_workers)
   for (int64_t i = 0; i < num_batches; ++i) {
-    scalar_T offset_radius = (max_start_radius(i) - min_start_radius(i)) / static_cast<scalar_T>(n_start_radius + 1);
-    start_radii(Eigen::seqN(i * n_start_radius, n_start_radius)) = ArrayX<scalar_T>::LinSpaced(
-        n_start_radius, min_start_radius(i) + offset_radius, max_start_radius(i) - offset_radius);
-    scalar_T offset_x = (max_start_x(i) - min_start_x(i)) / static_cast<scalar_T>(n_start_x + 1);
-    start_centers_x(Eigen::seqN(i * n_start_x, n_start_x)) =
-        ArrayX<scalar_T>::LinSpaced(n_start_x, min_start_x(i) + offset_x, max_start_x(i) - offset_x);
-    scalar_T offset_y = (max_start_y(i) - min_start_y(i)) / static_cast<scalar_T>(n_start_y + 1);
-    start_centers_y(Eigen::seqN(i * n_start_y, n_start_y)) =
-        ArrayX<scalar_T>::LinSpaced(n_start_y, min_start_y(i) + offset_y, max_start_y(i) - offset_y);
+    if (n_start_radius == 1) {
+      start_radii(i) = min_start_radius(i) + (max_start_radius(i) - min_start_radius(i)) / 2.0;
+    } else {
+      start_radii(Eigen::seqN(i * n_start_radius, n_start_radius)) =
+          ArrayX<scalar_T>::LinSpaced(n_start_radius, min_start_radius(i), max_start_radius(i));
+    }
+    if (n_start_x == 1) {
+      start_centers_x(i) = min_start_x(i) + (max_start_x(i) - min_start_x(i)) / 2.0;
+    } else {
+      start_centers_x(Eigen::seqN(i * n_start_x, n_start_x)) =
+          ArrayX<scalar_T>::LinSpaced(n_start_x, min_start_x(i), max_start_x(i));
+    }
+    if (n_start_y == 1) {
+      start_centers_y(i) = min_start_y(i) + (max_start_y(i) - min_start_y(i)) / 2.0;
+    } else {
+      start_centers_y(Eigen::seqN(i * n_start_y, n_start_y)) =
+          ArrayX<scalar_T>::LinSpaced(n_start_y, min_start_y(i) + offset_y, max_start_y(i) - offset_y);
+    }
   }
 
   ArrayX3<scalar_T> fitted_circles =
@@ -169,11 +178,11 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
 
 #pragma omp task
           {
-            scalar_T start_radius = start_radii[idx_batch * n_start_radius + idx_radius];
-            scalar_T radius = start_radius;
+            auto start_radius = start_radii[idx_batch * n_start_radius + idx_radius];
+            auto radius = start_radius;
 
-            scalar_T start_center_x = start_centers_x[idx_batch * n_start_x + idx_x];
-            scalar_T start_center_y = start_centers_y[idx_batch * n_start_y + idx_y];
+            auto start_center_x = start_centers_x[idx_batch * n_start_x + idx_x];
+            auto start_center_y = start_centers_y[idx_batch * n_start_y + idx_y];
             RowVector2<scalar_T> center(start_center_x, start_center_y);
 
             scalar_T fitting_loss = 0;
