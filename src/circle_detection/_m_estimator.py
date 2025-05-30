@@ -5,11 +5,11 @@ __all__ = ["MEstimator"]
 from typing import Optional, Union, cast
 import numpy as np
 
+from circle_detection.type_aliases import FloatArray, LongArray
 from ._circle_detection_cpp import (  # type: ignore[import-not-found] # pylint: disable = import-error
     detect_circles_m_estimator as detect_circles_m_estimator_cpp,
 )
 from ._circle_detector import CircleDetector
-from circle_detection.type_aliases import FloatArray, LongArray
 
 
 class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attributes
