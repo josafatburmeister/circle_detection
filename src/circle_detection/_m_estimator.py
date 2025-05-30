@@ -1,4 +1,4 @@
-""" M-Estimator circle detection method. """
+"""M-Estimator circle detection method."""
 
 __all__ = ["MEstimator"]
 

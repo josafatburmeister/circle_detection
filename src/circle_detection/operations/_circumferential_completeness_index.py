@@ -1,4 +1,4 @@
-""" Operations to calculate the circumferential completeness index and to filter circles based on this metric. """
+"""Operations to calculate the circumferential completeness index and to filter circles based on this metric."""
 
 __all__ = [
     "circumferential_completeness_index",

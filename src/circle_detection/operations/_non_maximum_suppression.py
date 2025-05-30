@@ -1,4 +1,4 @@
-""" Non-maximum suppression operation to remove overlapping circles. """
+"""Non-maximum suppression operation to remove overlapping circles."""
 
 __all__ = ["non_maximum_suppression"]
 

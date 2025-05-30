@@ -1,4 +1,4 @@
-""" Post-processing operations for the circle detection. """
+"""Post-processing operations for the circle detection."""
 
 from ._circumferential_completeness_index import *
 from ._deduplicate_circles import *

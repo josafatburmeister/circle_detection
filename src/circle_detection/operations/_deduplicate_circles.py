@@ -1,4 +1,4 @@
-""" Deduplication of circles. """
+"""Deduplication of circles."""
 
 __all__ = ["deduplicate_circles"]
 

@@ -1,4 +1,4 @@
-""" Circle detection in 2D point sets. """
+"""Circle detection in 2D point sets."""
 
 from ._circle_detector import *
 from ._m_estimator import *
