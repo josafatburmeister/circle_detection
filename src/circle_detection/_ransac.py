@@ -44,7 +44,7 @@ class Ransac(CircleDetector):
         :nowrap:
 
         \begin{eqnarray}
-            L(\begin{bmatrix} a, b, r \end{bmatrix}) = -\frac{1}{N} \sum_{i=1}^N \frac{1}{s} \rho
+            H(\begin{bmatrix} a, b, r \end{bmatrix}) = \sum_{i=1}^N \frac{1}{s} \rho
             \Biggl(
                 \frac{\|\begin{bmatrix}x_i, y_i \end{bmatrix}^T - \begin{bmatrix} a, b \end{bmatrix}^T\| - r}{s}
             \Biggr)
@@ -52,7 +52,9 @@ class Ransac(CircleDetector):
 
     Here, :math:`\{(x_1, y_1), ..., (x_N, y_N)\}` is the set of input points and :math:`(a, b, r)` are the circle
     parameters, :math:`\rho` is a kernel function, and :math:`s` is the kernel bandwidth. The standard Gaussian
-    distribution is used as the kernel function and the kernel bandwidth is set to the RANSAC error threshold.
+    distribution is used as the kernel function and the kernel bandwidth is set to the RANSAC error threshold. Note
+    that, unlike the original formulation of the score function by Garlipp and Müller, the mean has been replaced by a
+    sum to ensure that the score value is independent of the number of noise points in the input.
 
     Args:
         bandwidth: Error threshold defining which points are considered outliers.
