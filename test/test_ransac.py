@@ -1,4 +1,4 @@
-""" Tests for circle_detection.Ransac. """
+"""Tests for circle_detection.Ransac."""
 
 import multiprocessing
 import time

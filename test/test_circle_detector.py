@@ -1,4 +1,4 @@
-""" Tests for :code:`circle_detection.CircleDetector`. """
+"""Tests for :code:`circle_detection.CircleDetector`."""
 
 from typing import Any, Dict
 

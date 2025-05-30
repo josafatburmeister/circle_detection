@@ -1,4 +1,4 @@
-""" Utilities for generating test data. """
+"""Utilities for generating test data."""
 
 __all__ = ["generate_circles", "generate_circle_points"]
 
