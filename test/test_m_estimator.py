@@ -49,7 +49,7 @@ class TestMEstimator:
 
         expected_fitting_scores = []
         for circle in circle_detector.circles:
-            residuals = ((np.linalg.norm(xy - circle[:2], axis=-1) - circle[2]) / bandwidth)
+            residuals = (np.linalg.norm(xy - circle[:2], axis=-1) - circle[2]) / bandwidth
             expected_fitting_score = 1 / np.sqrt(2 * np.pi) * np.exp(-1 / 2 * residuals**2) / bandwidth
             expected_fitting_scores.append(expected_fitting_score.sum())
 
