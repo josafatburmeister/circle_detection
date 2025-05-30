@@ -7,6 +7,8 @@ from typing import Union
 import numpy as np
 import numpy.typing as npt
 
+from circle_detection.type_aliases import FloatArray
+
 
 def generate_circles(  # pylint: disable=too-many-locals
     num_circles: int,
@@ -22,8 +24,8 @@ def generate_circles(  # pylint: disable=too-many-locals
         num_circles: Number of circles to generate.
         min_radius: Minimum circle radius.
         max_radius: Maximum circle radius.
-        allow_overlapping_circles: Whether the generated circles are allowed to overlap. Defaults to :code:`False`.
-        seed: Random seed. Defaults to 0.
+        allow_overlapping_circles: Whether the generated circles are allowed to overlap.
+        seed: Random seed.
 
     Returns:
         Parameters of the generated circles (in the following order: x-coordinate of the center, y-coordinate of the
@@ -72,13 +74,13 @@ def generate_circles(  # pylint: disable=too-many-locals
 
 
 def generate_circle_points(  # pylint: disable=too-many-locals
-    circles: npt.NDArray[np.float64],
+    circles: FloatArray,
     min_points: int,
     max_points: int,
     add_noise_points: bool = False,
     seed: int = 0,
-    variance: Union[float, npt.NDArray[np.float64]] = 0,
-) -> npt.NDArray[np.float64]:
+    variance: Union[float, FloatArray] = 0,
+) -> FloatArray:
     """
     Generates a set of 2D points that are randomly sampled around the outlines of the specified circles.
 
@@ -88,8 +90,8 @@ def generate_circle_points(  # pylint: disable=too-many-locals
         min_points: Minimum number of points to sample from each circle.
         max_points: Maximum number of points to sample from each circle.
         add_noise_points: Whether randomly placed noise points not sampled from a circle should be added to the set
-            of 2D points. Defaults to :code:`False`.
-        seed: Random seed. Defaults to 0.
+            of 2D points.
+        seed: Random seed.
         variance: Variance of the distance of the sampled points to the circle outlines. Can be either a scalar
             value or an array of values whose length is equal to :code:`num_circles`.
 
@@ -106,7 +108,7 @@ def generate_circle_points(  # pylint: disable=too-many-locals
     if isinstance(variance, np.ndarray) and len(variance) != len(circles):
         raise ValueError("Length of variance must be equal to num_circles.")
 
-    circle: npt.NDArray[np.float64]
+    circle: FloatArray
     for circle_idx, circle in enumerate(circles):  # type: ignore[assignment]
         num_points = int(random_generator.uniform(min_points, max_points))
 

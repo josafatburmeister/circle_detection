@@ -5,19 +5,19 @@ __all__ = ["non_maximum_suppression"]
 from typing import Optional, Tuple
 
 import numpy as np
-import numpy.typing as npt
 
 from circle_detection.operations._operations_cpp import (  # type: ignore[import-not-found] # pylint: disable=import-error, no-name-in-module
     non_maximum_suppression as non_maximum_suppression_cpp,
 )
+from circle_detection.type_aliases import FloatArray, LongArray
 
 
 def non_maximum_suppression(
-    circles: npt.NDArray,
-    fitting_scores: npt.NDArray,
-    batch_lengths: Optional[npt.NDArray[np.int64]] = None,
+    circles: FloatArray,
+    fitting_scores: FloatArray,
+    batch_lengths: Optional[LongArray] = None,
     num_workers: int = 1,
-) -> Tuple[npt.NDArray, npt.NDArray, npt.NDArray[np.int64], npt.NDArray[np.int64]]:
+) -> Tuple[FloatArray, FloatArray, LongArray, LongArray]:
     r"""
     Non-maximum suppression operation to remove overlapping circles. If a circle overlaps with other circles, it is
     only kept if it has the highest fitting score among the circles with which it overlaps. This method supports batch
@@ -36,9 +36,8 @@ def non_maximum_suppression(
             circles, then :code:`batch_lengths` should be set to :code:`[N_1, N_2]` and :code:`circles[:N_1]` should
             contain the circles of the first batch item and :code:`circles[N_1:]` the circles of the second batch item.
             If :code:`batch_lengths` is set to :code:`None`, it is assumed that the input circles belong to a single
-            batch item and batch processing is disabled. Defaults to :code:`None`.
+            batch item and batch processing is disabled.
         num_workers: Number of workers threads to use for parallel processing. If set to -1, all CPU threads are used.
-            Defaults to 1.
 
     Returns:
         : Tuple of four arrays. The first contains the parameters of the circles remaining after non-maximum

@@ -6,7 +6,6 @@ import abc
 from typing import Any, Optional, cast
 
 import numpy as np
-import numpy.typing as npt
 
 from circle_detection.operations import (
     deduplicate_circles,
@@ -14,6 +13,7 @@ from circle_detection.operations import (
     non_maximum_suppression as non_maximum_suppression_op,
     select_top_k_circles,
 )
+from circle_detection.type_aliases import FloatArray, LongArray
 
 
 class CircleDetector(abc.ABC):
@@ -45,15 +45,15 @@ class CircleDetector(abc.ABC):
 
     def __init__(self) -> None:
         self._has_detected_circles = False
-        self.circles: npt.NDArray = np.empty((0, 3), dtype=np.float64)
-        self.fitting_scores: npt.NDArray = np.empty(0, dtype=np.float64)
-        self.batch_lengths_circles: npt.NDArray[np.int64] = np.array([0], dtype=np.int64)
+        self.circles: FloatArray = np.empty((0, 3), dtype=np.float64)
+        self.fitting_scores: FloatArray = np.empty(0, dtype=np.float64)
+        self.batch_lengths_circles: LongArray = np.array([0], dtype=np.int64)
 
-        self._xy: npt.NDArray = np.empty((0, 2), dtype=np.float64)
-        self._batch_lengths_xy: npt.NDArray[np.int64] = np.array([0], dtype=np.int64)
+        self._xy: FloatArray = np.empty((0, 2), dtype=np.float64)
+        self._batch_lengths_xy: LongArray = np.array([0], dtype=np.int64)
 
     @abc.abstractmethod
-    def detect(self, xy: npt.NDArray, *, batch_lengths: Optional[npt.NDArray[np.int64]] = None, **kwargs: Any):
+    def detect(self, xy: FloatArray, *, batch_lengths: Optional[LongArray] = None, **kwargs: Any):
         """
         This method must be overwritten in subclasses to implement the circle detection approach.
 
@@ -79,31 +79,30 @@ class CircleDetector(abc.ABC):
 
         Args:
             max_circles: Maximum number of circles to return. If more circles are detected, the circles with the lowest
-                fitting scores are returned. Defaults to :code:`None`, which means that all detected circles are
-                returned.
+                fitting scores are returned. If set to :code:`None`, all detected circles are returned.
             deduplication_precision: Precision parameter for the deduplication of the circles. If the parameters of two
                 detected circles are equal when rounding with the specified numnber of decimals, only one of them is
-                kept. Defaults to 4.
+                kept.
             min_circumferential_completeness_idx: Minimum
                 `circumferential completeness index <https://doi.org/10.3390/rs12101652>`__ that a circle must have in
                 order to not be discarded. If :code:`min_circumferential_completeness_idx` is set,
                 :code:`circumferential_completeness_idx_num_regions` must also be set. If
                 :code:`min_circumferential_completeness_idx` is :code:`None`, no filtering based on the circumferential
-                completeness index is done. Defaults to :code:`None`.
+                completeness index is done.
             circumferential_completeness_idx_max_dist: Maximum distance a point can have to the circle outline to be
                 counted as part of the circle when computing the circumferential completeness index. If set to
                 :code:`None` and the algorithm has a bandwidth parameter, the bandwidth of the circle detection
                 algorithm is used as the default. If the circle detection algorithm has no bandwidth parameter, points
                 are counted as part of the circle if their distance to the circle is center is in the interval
-                :math:`[0.7 \cdot r, 1.3 \cdot r]` where :math:`r` is the circle radius if . Defaults to :code:`None`.
+                :math:`[0.7 \cdot r, 1.3 \cdot r]` where :math:`r` is the circle radius.
             circumferential_completeness_idx_num_regions: Number of angular regions for computing the circumferential
                 completeness index. Must not be :code:`None`, if :code:`min_circumferential_completeness_idx` is not
-                :code:`None`. Defaults to :code:`None`.
+                :code:`None`.
             non_maximum_suppression: Whether non-maximum suppression should be applied to the detected circles. If this
                 option is enabled, circles that overlap with other circles, are only kept if they have the lowest
-                fitting loss among the circles with which they overlap. Defaults to :code:`True`.
+                fitting loss among the circles with which they overlap.
             num_workers: Number of workers threads to use for parallel processing. If set to -1, all CPU threads are
-                used. Defaults to 1.
+                used.
 
         Raises:
             ValueError: if this method is called before calling :code:`self.detect()` or if

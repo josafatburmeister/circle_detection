@@ -5,12 +5,12 @@ __all__ = ["Ransac"]
 from typing import Optional, Union, cast
 
 import numpy as np
-import numpy.typing as npt
 
 from ._circle_detection_cpp import (  # type: ignore[import-not-found] # pylint: disable = import-error
     detect_circles_ransac as detect_circles_ransac_cpp,
 )
 from ._circle_detector import CircleDetector
+from circle_detection.type_aliases import FloatArray, LongArray
 
 
 class Ransac(CircleDetector):
@@ -59,11 +59,10 @@ class Ransac(CircleDetector):
     Args:
         bandwidth: Error threshold defining which points are considered outliers.
         iterations: How often the RANSAC procedure is repeated. Increasing the number of iterations increases the
-            probability of obtaining at least one fitting circle. Defaults to 1000.
-        num_samples: Number of hypothetical inliers to sample in each iteration. Defaults to 3.
+            probability of obtaining at least one fitting circle.
+        num_samples: Number of hypothetical inliers to sample in each iteration.
         min_concensus_points: Minimum size the consensus set of a circle must have in order to accept the circle.
-            Defaults to 3.
-        min_fitting_score: Minimum fitting score a circle must have in order to be accepted. Defaults to :code:`100`.
+        min_fitting_score: Minimum fitting score a circle must have in order to be accepted.
 
     Raises:
         ValueError: If :code:`num_samples` or :code:`min_concensus_points` are smaller than 3.
@@ -116,15 +115,15 @@ class Ransac(CircleDetector):
 
     def detect(  # type: ignore[override] # pylint: disable=arguments-differ, too-many-arguments, too-many-locals, too-many-branches, too-many-statements
         self,
-        xy: npt.NDArray,
+        xy: FloatArray,
         *,
-        batch_lengths: Optional[npt.NDArray[np.int64]] = None,
-        break_min_x: Optional[Union[float, npt.NDArray]] = None,
-        break_max_x: Optional[Union[float, npt.NDArray]] = None,
-        break_min_y: Optional[Union[float, npt.NDArray]] = None,
-        break_max_y: Optional[Union[float, npt.NDArray]] = None,
-        break_min_radius: Optional[Union[float, npt.NDArray]] = None,
-        break_max_radius: Optional[Union[float, npt.NDArray]] = None,
+        batch_lengths: Optional[LongArray] = None,
+        break_min_x: Optional[Union[float, FloatArray]] = None,
+        break_max_x: Optional[Union[float, FloatArray]] = None,
+        break_min_y: Optional[Union[float, FloatArray]] = None,
+        break_max_y: Optional[Union[float, FloatArray]] = None,
+        break_min_radius: Optional[Union[float, FloatArray]] = None,
+        break_max_radius: Optional[Union[float, FloatArray]] = None,
         num_workers: int = 1,
         seed: Optional[int] = None,
     ):
@@ -143,45 +142,41 @@ class Ransac(CircleDetector):
                 :code:`[N_1, N_2]` and :code:`xy[:N_1]` should contain the points of the first point set and
                 :code:`circles[N_1:]` the points of the second point set. If :code:`batch_lengths` is set to
                 :code:`None`, it is assumed that the input points all belong to the same point set and batch processing
-                is disabled. Defaults to :code:`None`.
+                is disabled.
             break_min_x: Rejection criterion for circle fitting. If the x-coordinate of a circle center is smaller than
                 this value, the respective circle is discarded. Can be either a scalar, an array of values (one per
                 batch item), or :code:`None`. If a scalar is provided, the same value is used for all batch items.
                 If set to :code:`None`, :math:`(x_{min} - 2s)` is used as the default, where :math:`x_{min}` is the
-                minimum of the x-coordinates of the points within a batch item and :math:`s` is the bandwidth. Defaults
-                to :code:`None`.
+                minimum of the x-coordinates of the points within a batch item and :math:`s` is the bandwidth.
             break_max_x: Rejection criterion for circle fitting. If the x-coordinate of a circle center is larger than
                 this value, the respective circle is discarded. Can be either a scalar, an array of values (one
                 per batch item), or :code:`None`. If a scalar is provided, the same value is used for all batch items.
                 If set to :code:`None`, :math:`(x_{max} + 2s)` is used as the default, where :math:`x_{max}` is the
-                maximum of the x-coordinates of the points within a batch item and :math:`s` is the bandwidth. Defaults
-                to :code:`None`.
+                maximum of the x-coordinates of the points within a batch item and :math:`s` is the bandwidth.
             break_min_y: Rejection criterion for circle fitting. If the y-coordinate of a circle center is smaller than
                 this value, the respective circle is discarded. Can be either a scalar, an array of values (one per
                 batch item), or :code:`None`. If a scalar is provided, the same value is used for all batch items.
                 If set to :code:`None`, :math:`(y_{min} - 2s)` is used as the default, where :math:`y_{min}` is the
-                minimum of the y-coordinates of the points within a batch item and :math:`s` is the bandwidth. Defaults
-                to :code:`None`.
+                minimum of the y-coordinates of the points within a batch item and :math:`s` is the bandwidth.
             break_max_y: Rejection criterion for circle fitting. If the x-coordinate of a circle center is larger than
                 this value, the respective circle is discarded. Can be either a scalar, an array of values (one
                 per batch item), or :code:`None`. If a scalar is provided, the same value is used for all batch items.
                 If set to :code:`None`, :math:`(y_{max} + 2s)` is used as the default, where :math:`x_{min}` is the
-                maximum of the y-coordinates of the points within a batch item and :math:`s` is the bandwidth. Defaults
-                to :code:`None`.
+                maximum of the y-coordinates of the points within a batch item and :math:`s` is the bandwidth.
             break_min_radius: Rejection criterion for circle fitting. If the radius of a circle center is smaller than
                 this value, the respective circle is discarded. Can be either a scalar, an array of values (one per
                 batch item), or :code:`None`. If a scalar is provided, the same value is used for all batch items. If
-                set to :code:`None`, zero is used as the default. Defaults to :code:`None`.
+                set to :code:`None`, zero is used as the default.
             break_max_radius:  Rejection criterion for circle fitting. If the radius of a circle center is larger than
                 this value, the respective circle is discarded. Can be either a scalar, an array of values (one per
                 batch item), or :code:`None`. If a scalar is provided, the same value is used for all batch items. If
                 set to :code:`None`, :math:`max(x_{max} - x_{min}, y_{max} - y_{min}) + 2s` is used as the default,
                 where :math:`s` is the bandwidth and :math:`x_{min}`, :math:`x_{max}`, :math:`y_{min}`, and
                 :math:`y_{max}` are the minimum and the maximum of the x- and y-coordinates of the points within a batch
-                item, respectively. Defaults to :code:`None`.
+                item, respectively.
             num_workers: Number of workers threads to use for parallel processing. If set to -1, all CPU threads are
-                used. Defaults to 1.
-            seed: Random seed. If set to :code:`None`, the random processes are not seeded. Defaults to :code:`None`.
+                used.
+            seed: Random seed. If set to :code:`None`, the random processes are not seeded.
 
         Raises:
             ValueError: if :code:`batch_lengths` is an empty array or the length of :code:`xy` is not equal to the sum
@@ -227,13 +222,13 @@ class Ransac(CircleDetector):
             break_min_x = min_start_x - 2 * self._bandwidth
         elif not isinstance(break_min_x, np.ndarray):
             break_min_x = np.full(num_batches, fill_value=break_min_x, dtype=xy.dtype)
-        break_min_x = cast(npt.NDArray, break_min_x)
+        break_min_x = cast(FloatArray, break_min_x)
 
         if break_max_x is None:
             break_max_x = max_start_x + 2 * self._bandwidth
         elif not isinstance(break_max_x, np.ndarray):
             break_max_x = np.full(num_batches, fill_value=break_max_x, dtype=xy.dtype)
-        break_max_x = cast(npt.NDArray, break_max_x)
+        break_max_x = cast(FloatArray, break_max_x)
 
         if (break_min_x >= break_max_x).any():
             raise ValueError("break_min_x must be smaller than break_max_x.")
@@ -258,13 +253,13 @@ class Ransac(CircleDetector):
             break_min_y = min_start_y - 2 * self._bandwidth
         elif not isinstance(break_min_y, np.ndarray):
             break_min_y = np.full(num_batches, fill_value=break_min_y, dtype=xy.dtype)
-        break_min_y = cast(npt.NDArray, break_min_y)
+        break_min_y = cast(FloatArray, break_min_y)
 
         if break_max_y is None:
             break_max_y = max_start_y + 2 * self._bandwidth
         elif not isinstance(break_max_y, np.ndarray):
             break_max_y = np.full(num_batches, fill_value=break_max_y, dtype=xy.dtype)
-        break_max_y = cast(npt.NDArray, break_max_y)
+        break_max_y = cast(FloatArray, break_max_y)
 
         if (break_min_y > break_max_y).any():
             raise ValueError("break_min_y must be smaller than break_max_y.")
@@ -285,13 +280,13 @@ class Ransac(CircleDetector):
             break_min_radius = np.zeros(num_batches, dtype=xy.dtype)
         elif not isinstance(break_min_radius, np.ndarray):
             break_min_radius = np.full(num_batches, fill_value=break_min_radius, dtype=xy.dtype)
-        break_min_radius = cast(npt.NDArray, break_min_radius)
+        break_min_radius = cast(FloatArray, break_min_radius)
 
         if break_max_radius is None:
             break_max_radius = max_start_radius + 2 * self._bandwidth
         elif not isinstance(break_max_radius, np.ndarray):
             break_max_radius = np.full(num_batches, fill_value=break_max_radius, dtype=xy.dtype)
-        break_max_radius = cast(npt.NDArray, break_max_radius)
+        break_max_radius = cast(FloatArray, break_max_radius)
 
         if (break_min_radius > break_max_radius).any():
             raise ValueError("break_min_radius must be smaller than break_max_radius.")
