@@ -124,16 +124,6 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
     :code:`break_min_radius`, and :code:`break_max_radius`. If the parameters of a circle leave these value ranges
     during optimization, the optimization of the respective circle is terminated and the circle is discarded.
 
-    Circles that were initialized with different start values can converge to the same local optimum, which can lead to
-    duplicates among the detected circles. Such duplicates can be filtered by setting the :code:`precision` parameter.
-    In this way, the parameters of all detected circles are rounded with the specified precision and if the parameters
-    of several circles are equal after rounding, only one of them is kept.
-
-    Since the loss function can have several local minima, it is possible that the circle detection produces several
-    overlapping circles. If it is expected that circles do not overlap, non-maximum suppression can be applied. With
-    non-maximum suppression, circles that overlap with other circles, are only kept if they have the lowest fitting loss
-    among the circles with which they overlap.
-
     Args:
         bandwidth: Kernel bandwidth.
         acceleration_factor: Acceleration factor :math:`\alpha` for increasing the step size. Defaults to 1.6.
