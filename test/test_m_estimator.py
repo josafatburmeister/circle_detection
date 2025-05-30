@@ -1,4 +1,4 @@
-""" Tests for :code:`circle_detection.MEstimator`. """
+"""Tests for :code:`circle_detection.MEstimator`."""
 
 import multiprocessing
 import time

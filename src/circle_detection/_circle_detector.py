@@ -1,4 +1,4 @@
-""" Abstract base class for implementing circle detectors. """
+"""Abstract base class for implementing circle detectors."""
 
 __all__ = ["CircleDetector"]
 

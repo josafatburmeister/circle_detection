@@ -1,4 +1,4 @@
-""" Selection of circles with the highest fitting scores. """
+"""Selection of circles with the highest fitting scores."""
 
 __all__ = ["select_top_k_circles"]
 
