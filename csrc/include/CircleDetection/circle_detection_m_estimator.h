@@ -42,7 +42,7 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
     scalar_T armijo_attenuation_factor = 0.7,
     scalar_T armijo_min_decrease_percentage = 0.5,
     scalar_T min_step_size = 1e-20,
-    scalar_T min_fitting_score = 1,
+    scalar_T min_fitting_score = 100,
     int num_workers = 1) {
   if (xy.rows() != batch_lengths.sum()) {
     throw std::invalid_argument("The number of points must be equal to the sum of batch_lengths");
@@ -186,7 +186,6 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
             RowVector2<scalar_T> center(start_center_x, start_center_y);
 
             scalar_T fitting_loss = 0;
-            scalar_T fitting_score = 0;
             bool diverged = false;
 
             for (int iteration = 0; iteration < max_iterations; ++iteration) {
@@ -285,7 +284,6 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
 
                 while (next_loss < previous_loss) {
                   step_size = next_step_size;
-                  fitting_score = -1 * next_loss / bandwidth;
                   previous_loss = next_loss;
                   next_step_size *= acceleration_factor;
 
@@ -320,7 +318,7 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
                        next_radius) /
                       bandwidth;
                   auto next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<scalar_T>).mean();
-                  fitting_score = -1 * next_loss / bandwidth;
+                  // fitting_score = -1 * next_loss / bandwidth;
 
                   actual_loss_decrease = fitting_loss - next_loss;
                   expected_loss_decrease = -1 * armijo_min_decrease_percentage * step_size *
@@ -347,6 +345,13 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
                 break;
               }
             }
+
+            ArrayX<scalar_T> dists_to_circle =
+                (xy_per_batch[idx_batch].matrix().rowwise() - center).rowwise().norm().array() - radius;
+
+            scalar_T fitting_score =
+                1 / bandwidth *
+                (dists_to_circle / bandwidth).unaryExpr(&CircleDetection::score_fn_scalar<scalar_T>).sum();
 
             if (!diverged && fitting_score >= min_fitting_score && std::isfinite(center[0]) &&
                 std::isfinite(center[1]) && std::isfinite(radius) && radius > 0) {
