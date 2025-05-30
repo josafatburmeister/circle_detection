@@ -136,7 +136,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
         max_iterations: Maximum number of optimization iterations to run for each combination of starting values.
             Defaults to 1000.
         min_fitting_score: Minimum fitting score (equal to -1 :math:`\cdot` fitting loss) that a circle must have in
-            order not to be discarded. Defaults to :math:`1`.
+            order not to be discarded. Defaults to :math:`100`.
 
     Attributes:
         circles: After the :code:`self.detect()` method has been called, this attribute contains the parameters of the
@@ -177,7 +177,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
         armijo_attenuation_factor: float = 0.5,
         armijo_min_decrease_percentage: float = 0.1,
         min_step_size: float = 1e-20,
-        min_fitting_score: float = 1,
+        min_fitting_score: float = 100,
     ):
         super().__init__()
 

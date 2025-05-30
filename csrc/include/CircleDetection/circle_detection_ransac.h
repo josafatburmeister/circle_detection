@@ -195,7 +195,7 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_ransac(
           // dists to circle center
           dists_to_circle = (xy_per_batch[batch_idx].rowwise() - circle({0, 1}).transpose().array()).rowwise().norm();
           // dists to circle outline
-          dists_to_circle = (dists_to_circle - circle(2)).abs();
+          dists_to_circle = dists_to_circle - circle(2);
 
           scalar_T fitting_score =
               1 / bandwidth *

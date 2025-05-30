@@ -50,8 +50,8 @@ class TestMEstimator:
         expected_fitting_scores = []
         for circle in circle_detector.circles:
             residuals = (np.linalg.norm(xy - circle[:2], axis=-1) - circle[2]) / bandwidth
-            expected_loss = 1 / np.sqrt(2 * np.pi) * np.exp(-1 / 2 * residuals**2) / bandwidth
-            expected_fitting_scores.append(expected_loss.mean())
+            expected_fitting_score = 1 / np.sqrt(2 * np.pi) * np.exp(-1 / 2 * residuals**2) / bandwidth
+            expected_fitting_scores.append(expected_fitting_score.sum())
 
         assert (np.abs(original_circles - circle_detector.circles) < 0.01).all()
         decimal = 10 if scalar_dtype == np.float64 else 4
@@ -72,7 +72,7 @@ class TestMEstimator:
         min_start_xy = xy.min(axis=0) - 2
         max_start_xy = xy.max(axis=0) + 2
 
-        circle_detector = MEstimator(bandwidth=0.05, min_fitting_score=1)
+        circle_detector = MEstimator(bandwidth=0.05, min_fitting_score=100)
         circle_detector.detect(
             xy,
             min_start_x=min_start_xy[0],
