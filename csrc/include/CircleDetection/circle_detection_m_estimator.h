@@ -148,7 +148,7 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
       start_centers_y(i) = min_start_y(i) + (max_start_y(i) - min_start_y(i)) / 2.0;
     } else {
       start_centers_y(Eigen::seqN(i * n_start_y, n_start_y)) =
-          ArrayX<scalar_T>::LinSpaced(n_start_y, min_start_y(i) + offset_y, max_start_y(i) - offset_y);
+          ArrayX<scalar_T>::LinSpaced(n_start_y, min_start_y(i), max_start_y(i));
     }
   }
 
