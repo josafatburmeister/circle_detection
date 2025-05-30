@@ -8,23 +8,23 @@ __all__ = [
 from typing import Optional, Tuple
 
 import numpy as np
-import numpy.typing as npt
 
 from circle_detection.operations._operations_cpp import (  # type: ignore[import-not-found] # pylint: disable=import-error, no-name-in-module
     circumferential_completeness_index as circumferential_completeness_index_cpp,
     filter_circumferential_completeness_index as filter_circumferential_completeness_index_cpp,
 )
+from circle_detection.type_aliases import FloatArray, LongArray
 
 
 def circumferential_completeness_index(
-    circles: npt.NDArray,
-    xy: npt.NDArray,
+    circles: FloatArray,
+    xy: FloatArray,
     num_regions: int,
     max_dist: Optional[float] = None,
-    batch_lengths_circles: Optional[npt.NDArray[np.int64]] = None,
-    batch_lengths_xy: Optional[npt.NDArray[np.int64]] = None,
+    batch_lengths_circles: Optional[LongArray] = None,
+    batch_lengths_xy: Optional[LongArray] = None,
     num_workers: int = 1,
-) -> npt.NDArray:
+) -> FloatArray:
     r"""
     Calculates the circumferential completeness indices of the specified circles. The circumferential completeness index
     is a metric that measures how well a circle fitted to a set of points is covered by points. It was proposed in
@@ -50,20 +50,19 @@ def circumferential_completeness_index(
         num_regions: Number of angular regions.
         max_dist: Maximum distance a point can have to the circle outline to be counted as part of the circle. If set to
             :code:`None`, points are counted as part of the circle if their distance to the circle is center is in the
-            interval :math:`[0.7 \cdot r, 1.3 \cdot r]` where :math:`r` is the circle radius. Defaults to :code:`None`.
+            interval :math:`[0.7 \cdot r, 1.3 \cdot r]` where :math:`r` is the circle radius.
         batch_lengths_circles: Number of circles in each item of the input batch. For batch processing, it is
             expected that all circles belonging to the same batch item are stored consecutively in the :code:`circles`
             input array. For example, if a batch comprises two batch items with :math:`N_1` circles and :math:`N_2`
             circles, then :code:`batch_lengths_circles` should be set to :code:`[N_1, N_2]` and :code:`circles[:N_1]`
             should contain the circles of the first batch item and :code:`circles[N_1:]` the circles of the second batch
             item. If :code:`batch_lengths_circles` is set to :code:`None`, it is assumed that the input circles
-            belong to a single batch item and batch processing is disabled. Defaults to :code:`None`.
+            belong to a single batch item and batch processing is disabled.
         batch_lengths_xy: Number of points in each item of the input batch. For batch processing, it is
             expected that all points belonging to the same batch item are stored consecutively in the :code:`xy`
             input array. If :code:`batch_lengths_xy` is set to :code:`None`, it is assumed that the input points
-            belong to a single batch item and batch processing is disabled. Defaults to :code:`None`.
+            belong to a single batch item and batch processing is disabled.
         num_workers: Number of workers threads to use for parallel processing. If set to -1, all CPU threads are used.
-            Defaults to 1.
 
     Returns:
         Circumferential completeness indices of the circles.
@@ -112,15 +111,15 @@ def circumferential_completeness_index(
 
 
 def filter_circumferential_completeness_index(
-    circles: npt.NDArray,
-    xy: npt.NDArray,
+    circles: FloatArray,
+    xy: FloatArray,
     num_regions: int,
     min_circumferential_completeness_index: float,
     max_dist: Optional[float] = None,
-    batch_lengths_circles: Optional[npt.NDArray[np.int64]] = None,
-    batch_lengths_xy: Optional[npt.NDArray[np.int64]] = None,
+    batch_lengths_circles: Optional[LongArray] = None,
+    batch_lengths_xy: Optional[LongArray] = None,
     num_workers: int = 1,
-) -> Tuple[npt.NDArray, npt.NDArray[np.int64], npt.NDArray[np.int64]]:
+) -> Tuple[FloatArray, LongArray, LongArray]:
     r"""
     Filters out the circles whose circumferential completeness index is below the specified minimum circumferential
     completeness index. This method supports batch processing, i.e. separate sets of circles (i.e., different batch
@@ -136,20 +135,19 @@ def filter_circumferential_completeness_index(
         min_circumferential_completeness_index: Minimum circumferential index a point must have to not be discarded.
         max_dist: Maximum distance a point can have to the circle outline to be counted as part of the circle. If set to
             :code:`None`, points are counted as part of the circle if their distance to the circle is center is in the
-            interval :math:`[0.7 \cdot r, 1.3 \cdot r]` where :math:`r` is the circle radius. Defaults to :code:`None`.
+            interval :math:`[0.7 \cdot r, 1.3 \cdot r]` where :math:`r` is the circle radius.
         batch_lengths_circles: Number of circles in each item of the input batch. For batch processing, it is
             expected that all circles belonging to the same batch item are stored consecutively in the :code:`circles`
             input array. For example, if a batch comprises two batch items with :math:`N_1` circles and :math:`N_2`
             circles, then :code:`batch_lengths_circles` should be set to :code:`[N_1, N_2]` and :code:`circles[:N_1]`
             should contain the circles of the first batch item and :code:`circles[N_1:]` the circles of the second batch
             item. If :code:`batch_lengths_circles` is set to :code:`None`, it is assumed that the input circles
-            belong to a single batch item and batch processing is disabled. Defaults to :code:`None`.
+            belong to a single batch item and batch processing is disabled.
         batch_lengths_xy: Number of points in each item of the input batch. For batch processing, it is
             expected that all points belonging to the same batch item are stored consecutively in the :code:`xy`
             input array. If :code:`batch_lengths_xy` is set to :code:`None`, it is assumed that the input points
-            belong to a single batch item and batch processing is disabled. Defaults to :code:`None`.
+            belong to a single batch item and batch processing is disabled.
         num_workers: Number of workers threads to use for parallel processing. If set to -1, all CPU threads are used.
-            Defaults to 1.
 
     Returns:
         : Tuple of three arrays. The first contains the parameters of the circles remaining after filtering.

@@ -5,15 +5,16 @@ __all__ = ["select_top_k_circles"]
 from typing import Optional, Tuple
 
 import numpy as np
-import numpy.typing as npt
+
+from circle_detection.type_aliases import FloatArray, LongArray
 
 
 def select_top_k_circles(
-    circles: npt.NDArray,
-    fitting_scores: npt.NDArray,
+    circles: FloatArray,
+    fitting_scores: FloatArray,
     k: int,
-    batch_lengths: Optional[npt.NDArray[np.int64]] = None,
-) -> Tuple[npt.NDArray, npt.NDArray, npt.NDArray[np.int64], npt.NDArray[np.int64]]:
+    batch_lengths: Optional[LongArray] = None,
+) -> Tuple[FloatArray, FloatArray, LongArray, LongArray]:
     r"""
     Selects the :code:`k` circles with the highest fitting scores from a set of circles. If the set of circles contains
     less than :code:`k` circles, all circles are kept. This method supports batch processing, i.e. separate sets of
@@ -31,7 +32,7 @@ def select_top_k_circles(
             circles, then :code:`batch_lengths` should be set to :code:`[N_1, N_2]` and :code:`circles[:N_1]` should
             contain the circles of the first batch item and :code:`circles[N_1:]` the circles of the second batch item.
             If :code:`batch_lengths` is set to :code:`None`, it is assumed that the input circles belong to a single
-            batch item and batch processing is disabled. Defaults to :code:`None`.
+            batch item and batch processing is disabled.
 
     Returns:
         : Tuple of four arrays: The first contains the parameters of the selected circles and the second the

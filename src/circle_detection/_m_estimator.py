@@ -4,8 +4,8 @@ __all__ = ["MEstimator"]
 
 from typing import Optional, Union, cast
 import numpy as np
-import numpy.typing as npt
 
+from circle_detection.type_aliases import FloatArray, LongArray
 from ._circle_detection_cpp import (  # type: ignore[import-not-found] # pylint: disable = import-error
     detect_circles_m_estimator as detect_circles_m_estimator_cpp,
 )
@@ -126,17 +126,16 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
 
     Args:
         bandwidth: Kernel bandwidth.
-        acceleration_factor: Acceleration factor :math:`\alpha` for increasing the step size. Defaults to 1.6.
+        acceleration_factor: Acceleration factor :math:`\alpha` for increasing the step size.
         armijo_attenuation_factor: Attenuation factor :math:`\beta` for the backtracking line-search according to
-            Armijo's rule. Defaults to 0.5.
+            Armijo's rule.
         armijo_min_decrease_percentage: Hyperparameter :math:`\gamma` for the backtracking line-search according to
-            Armijo's rule. Defaults to 0.1.
+            Armijo's rule.
         min_step_size: Minimum step width. If the step size attenuation according to Armijo's rule results in a step
-            size below this step size, the attenuation of the step size is terminated. Defaults to :math:`10^{-20}`.
+            size below this step size, the attenuation of the step size is terminated.
         max_iterations: Maximum number of optimization iterations to run for each combination of starting values.
-            Defaults to 1000.
         min_fitting_score: Minimum fitting score (equal to :math:`-1 \cdot N \cdot` fitting loss where :math:`N` is the
-            number of input points) that a circle must have in order not to be discarded. Defaults to :math:`100`.
+            number of input points) that a circle must have in order not to be discarded.
 
     Attributes:
         circles: After the :code:`self.detect()` method has been called, this attribute contains the parameters of the
@@ -203,24 +202,24 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
 
     def detect(  # type: ignore[override] # pylint: disable=too-many-arguments, too-many-locals, too-many-branches, too-many-statements, arguments-differ
         self,
-        xy: npt.NDArray,
+        xy: FloatArray,
         *,
-        batch_lengths: Optional[npt.NDArray[np.int64]] = None,
-        min_start_x: Optional[Union[float, npt.NDArray]] = None,
-        max_start_x: Optional[Union[float, npt.NDArray]] = None,
+        batch_lengths: Optional[LongArray] = None,
+        min_start_x: Optional[Union[float, FloatArray]] = None,
+        max_start_x: Optional[Union[float, FloatArray]] = None,
         n_start_x: int = 10,
-        min_start_y: Optional[Union[float, npt.NDArray]] = None,
-        max_start_y: Optional[Union[float, npt.NDArray]] = None,
+        min_start_y: Optional[Union[float, FloatArray]] = None,
+        max_start_y: Optional[Union[float, FloatArray]] = None,
         n_start_y: int = 10,
-        min_start_radius: Optional[Union[float, npt.NDArray]] = None,
-        max_start_radius: Optional[Union[float, npt.NDArray]] = None,
+        min_start_radius: Optional[Union[float, FloatArray]] = None,
+        max_start_radius: Optional[Union[float, FloatArray]] = None,
         n_start_radius: int = 10,
-        break_min_x: Optional[Union[float, npt.NDArray]] = None,
-        break_max_x: Optional[Union[float, npt.NDArray]] = None,
-        break_min_y: Optional[Union[float, npt.NDArray]] = None,
-        break_max_y: Optional[Union[float, npt.NDArray]] = None,
-        break_min_radius: Optional[Union[float, npt.NDArray]] = None,
-        break_max_radius: Optional[Union[float, npt.NDArray]] = None,
+        break_min_x: Optional[Union[float, FloatArray]] = None,
+        break_max_x: Optional[Union[float, FloatArray]] = None,
+        break_min_y: Optional[Union[float, FloatArray]] = None,
+        break_max_y: Optional[Union[float, FloatArray]] = None,
+        break_min_radius: Optional[Union[float, FloatArray]] = None,
+        break_max_radius: Optional[Union[float, FloatArray]] = None,
         num_workers: int = 1,
     ) -> None:
         r"""
@@ -238,35 +237,33 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
                 :code:`[N_1, N_2]` and :code:`xy[:N_1]` should contain the points of the first point set and
                 :code:`circles[N_1:]` the points of the second point set. If :code:`batch_lengths` is set to
                 :code:`None`, it is assumed that the input points all belong to the same point set and batch processing
-                is disabled. Defaults to :code:`None`.
+                is disabled.
             min_start_x: Lower limit of the start values for the x-coordinates of the circle centers. Can be either a
                 scalar, an array of values (one per batch item), or :code:`None`. If a scalar is provided, the same
                 value is used for all batch items. If set to :code:`None`, the minimum of the x-coordinates in of the
-                points within each batch item is used as the default. Defaults to :code:`None`.
+                points within each batch item is used as the default.
             max_start_x: Upper limit of the start values for the x-coordinates of the circle centers. Can be either a
                 scalar, an array of values (one per batch item), or :code:`None`. If a scalar is provided, the same
                 value is used for all batch items. If set to :code:`None`, the maximum of the x-coordinates in of the
-                points within each batch item is used as the default. Defaults to :code:`None`.
-            n_start_x: Number of start values for the x-coordinates of the circle centers. Defaults to 10.
+                points within each batch item is used as the default.
+            n_start_x: Number of start values for the x-coordinates of the circle centers.
             min_start_y: Lower limit of the start values for the y-coordinates of the circle centers. Can be either a
                 scalar, an array of values (one per batch item), or :code:`None`. If a scalar is provided, the same
                 value is used for all batch items. If set to :code:`None`, the minimum of the y-coordinates in of the
-                points within each batch item is used as the default. Defaults to :code:`None`.
+                points within each batch item is used as the default.
             max_start_y: Upper limit of the start values for the y-coordinates of the circle centers. Can be either a
                 scalar, an array of values (one per batch item), or :code:`None`. If a scalar is provided, the same
                 value is used for all batch items. If set to :code:`None`, the maximum of the y-coordinates in of the
-                points within each batch item is used as the default. Defaults to :code:`None`.
-            n_start_y: Number of start values for the y-coordinates of the circle centers. Defaults to 10.
+                points within each batch item is used as the default.
+            n_start_y: Number of start values for the y-coordinates of the circle centers.
             min_start_radius: Lower limit of the start values for the circle radii. Can be either a scalar, an array of
                 values (one per batch item), or :code:`None`. If a scalar is provided, the same value is used for all
-                batch items. If set to :code:`None`, :code:`0.1 * max_start_radius` is used as the default. Defaults to
-                :code:`None`.
+                batch items. If set to :code:`None`, :code:`0.1 * max_start_radius` is used as the default.
             max_start_radius: Upper limit of the start values for the circle radii. Can be either a scalar, an array of
                 values (one per batch item), or :code:`None`. If a scalar is provided, the same value is used for all
                 batch items. If set to :code:`None`, the axis-aligned bounding box of the points within each batch item
-                is computed and the length of the longer side of the bounding box is used as the default. Defaults to
-                :code:`None`.
-            n_start_radius: Number of start values for the circle radii. Defaults to 10.
+                is computed and the length of the longer side of the bounding box is used as the default.
+            n_start_radius: Number of start values for the circle radii.
             break_min_x: Termination criterion for circle optimization. If the x-coordinate of a circle center becomes
                 smaller than this value during optimization, the optimization of the respective circle is terminated and
                 the respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
@@ -274,7 +271,6 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
                 :code:`None`, :math:`x_{start_{min}} - \max(0.1 \cdot (x_{start_{max}} - x_{start_{min}}), 2s)` is used
                 as the default, where :math:`x_{start_{min}}` and :math:`x_{start_{max}}` are the minimum and the
                 maximum start values for the x-coordinates of the circle centers, and :math:`s` is the bandwidth.
-                Defaults to :code:`None`.
             break_max_x: Termination criterion for circle optimization. If the x-coordinate of a circle center becomes
                 greater than this value during optimization, the optimization of the respective circle is terminated and
                 the respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
@@ -283,7 +279,6 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
                 :code:`None`, :math:`x_{start_{max}} + \max(0.1 \cdot (x_{start_{max}} - x_{start_{min}}), 2s)` is used
                 as the default, where :math:`x_{start_{min}}` and :math:`x_{start_{max}}` are the minimum and the
                 maximum start values for the x-coordinates of the circle centers, and :math:`s` is the bandwidth.
-                Defaults to :code:`None`.
             break_min_y: Termination criterion for circle optimization. If the y-coordinate of a circle center becomes
                 smaller than this value during optimization, the optimization of the respective circle is terminated and
                 the respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
@@ -291,7 +286,6 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
                 :code:`None`, :math:`y_{start_{min}} - \max(0.1 \cdot (y_{start_{max}} - y_{start_{min}}), 2s)` is used
                 as the default, where :math:`y_{start_{min}}` and :math:`y_{start_{max}}` are the minimum and the
                 maximum start values for the y-coordinates of the circle centers, and :math:`s` is the bandwidth.
-                Defaults to :code:`None`.
             break_max_y: Termination criterion for circle optimization. If the y-coordinate of a circle center becomes
                 greater than this value during optimization, the optimization of the respective circle is terminated and
                 the respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
@@ -299,26 +293,24 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
                 :code:`None`, :math:`y_{start_{max}} + \max(0.1 \cdot (y_{start_{max}} - y_{start_{min}}), 2s)` is used
                 as the default, where :math:`y_{start_{min}}` and :math:`y_{start_{max}}` are the minimum and the
                 maximum start values for the y-coordinates of the circle centers, and :math:`s` is the bandwidth.
-                Defaults to :code:`None`.
             break_min_radius: Termination criterion for circle optimization. If the radius of a circle center becomes
                 smaller than this value during optimization, the optimization of the respective circle is terminated and
                 the respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
                 :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to
                 :code:`None`, :math:`r_{start_{min}} - \max(0.1 \cdot (r_{start_{max}} - r_{start_{min}}), 2s)` is used
                 as the default, where :math:`r_{start_{min}}` and :math:`r_{start_{max}}` are the minimum and the
-                maximum start radius, and :math:`s` is the bandwidth. Defaults to :code:`None`.
+                maximum start radius, and :math:`s` is the bandwidth.
             break_max_radius: Termination criterion for circle optimization. If the radius of a circle center becomes
                 greater than this value during optimization, the optimization of the respective circle is terminated and
                 the respective circle is discarded. Can be either a scalar, an array of values (one per batch item), or
                 :code:`None`. If a scalar is provided, the same value is used for all batch items. If set to
                 :code:`None`, :math:`r_{start_{max}} + \max(0.1 \cdot (r_{start_{max}} - r_{start_{min}}), 2s)` is used
                 as the default, where :math:`r_{start_{min}}` and :math:`r_{start_{max}}` are the minimum and the
-                maximum start radius, and :math:`s` is the bandwidth. Defaults to :code:`None`.
+                maximum start radius, and :math:`s` is the bandwidth.
             break_min_change: Termination criterion for circle optimization. If the updates of all circle parameters in
                 an iteration are smaller than this threshold, the optimization of the respective circle is terminated.
-                Defaults to :math:`10^{-5}`.
             num_workers: Number of workers threads to use for parallel processing. If set to -1, all CPU threads are
-                used. Defaults to 1.
+                used.
 
         Raises:
             ValueError: if :code:`batch_lengths` is an empty array or the length of :code:`xy` is not equal to the sum
@@ -394,7 +386,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
             min_start_x = np.full(num_batches, fill_value=min_start_x, dtype=xy.dtype)
         else:
             min_start_x = min_start_x.astype(xy.dtype)
-        min_start_x = cast(npt.NDArray, min_start_x)
+        min_start_x = cast(FloatArray, min_start_x)
 
         if max_start_x is None:
             max_start_x = np.array(
@@ -408,7 +400,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
             max_start_x = np.full(num_batches, fill_value=max_start_x, dtype=xy.dtype)
         else:
             max_start_x = max_start_x.astype(xy.dtype)
-        max_start_x = cast(npt.NDArray, max_start_x)
+        max_start_x = cast(FloatArray, max_start_x)
 
         if break_min_x is None:
             break_min_x = min_start_x - np.maximum(0.1 * (max_start_x - min_start_x), 2 * self._bandwidth)
@@ -416,7 +408,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
             break_min_x = np.full(num_batches, fill_value=break_min_x, dtype=xy.dtype)
         else:
             break_min_x = break_min_x.astype(xy.dtype)
-        break_min_x = cast(npt.NDArray, break_min_x)
+        break_min_x = cast(FloatArray, break_min_x)
 
         if break_max_x is None:
             break_max_x = max_start_x + np.maximum(0.1 * (max_start_x - min_start_x), 2 * self._bandwidth)
@@ -424,7 +416,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
             break_max_x = np.full(num_batches, fill_value=break_max_x, dtype=xy.dtype)
         else:
             break_max_x = break_max_x.astype(xy.dtype)
-        break_max_x = cast(npt.NDArray, break_max_x)
+        break_max_x = cast(FloatArray, break_max_x)
 
         if (min_start_x > max_start_x).any():
             raise ValueError("min_start_x must be smaller than or equal to max_start_x.")
@@ -445,7 +437,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
             min_start_y = np.full(num_batches, fill_value=min_start_y, dtype=xy.dtype)
         else:
             min_start_y = min_start_y.astype(xy.dtype)
-        min_start_y = cast(npt.NDArray, min_start_y)
+        min_start_y = cast(FloatArray, min_start_y)
 
         if max_start_y is None:
             max_start_y = np.array(
@@ -459,7 +451,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
             max_start_y = np.full(num_batches, fill_value=max_start_y, dtype=xy.dtype)
         else:
             max_start_y = max_start_y.astype(xy.dtype)
-        max_start_y = cast(npt.NDArray, max_start_y)
+        max_start_y = cast(FloatArray, max_start_y)
 
         if break_min_y is None:
             break_min_y = min_start_y - np.maximum(0.1 * (max_start_y - min_start_y), 2 * self._bandwidth)
@@ -467,7 +459,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
             break_min_y = np.full(num_batches, fill_value=break_min_y, dtype=xy.dtype)
         else:
             break_min_y = break_min_y.astype(xy.dtype)
-        break_min_y = cast(npt.NDArray, break_min_y)
+        break_min_y = cast(FloatArray, break_min_y)
 
         if break_max_y is None:
             break_max_y = max_start_y + np.maximum(0.1 * (max_start_y - min_start_y), 2 * self._bandwidth)
@@ -475,7 +467,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
             break_max_y = np.full(num_batches, fill_value=break_max_y, dtype=xy.dtype)
         else:
             break_max_y = break_max_y.astype(xy.dtype)
-        break_max_y = cast(npt.NDArray, break_max_y)
+        break_max_y = cast(FloatArray, break_max_y)
 
         if (min_start_y > max_start_y).any():
             raise ValueError("min_start_y must be smaller than or equal to max_start_y.")
@@ -500,7 +492,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
             max_start_radius = np.full(num_batches, fill_value=max_start_radius, dtype=xy.dtype)
         else:
             max_start_radius = max_start_radius.astype(xy.dtype)
-        max_start_radius = cast(npt.NDArray, max_start_radius)
+        max_start_radius = cast(FloatArray, max_start_radius)
 
         if min_start_radius is None:
             min_start_radius = 0.1 * max_start_radius
@@ -508,7 +500,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
             min_start_radius = np.full(num_batches, fill_value=min_start_radius, dtype=xy.dtype)
         else:
             min_start_radius = min_start_radius.astype(xy.dtype)
-        min_start_radius = cast(npt.NDArray, min_start_radius)
+        min_start_radius = cast(FloatArray, min_start_radius)
 
         if break_min_radius is None:
             break_min_radius = min_start_radius - np.maximum(
@@ -518,7 +510,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
             break_min_radius = np.full(num_batches, fill_value=break_min_radius, dtype=xy.dtype)
         else:
             break_min_radius = break_min_radius.astype(xy.dtype)
-        break_min_radius = cast(npt.NDArray, break_min_radius)
+        break_min_radius = cast(FloatArray, break_min_radius)
 
         if break_max_radius is None:
             break_max_radius = max_start_radius + np.maximum(
@@ -528,7 +520,7 @@ class MEstimator(CircleDetector):  # pylint: disable=too-many-instance-attribute
             break_max_radius = np.full(num_batches, fill_value=break_max_radius, dtype=xy.dtype)
         else:
             break_max_radius = break_max_radius.astype(xy.dtype)
-        break_max_radius = cast(npt.NDArray, break_max_radius)
+        break_max_radius = cast(FloatArray, break_max_radius)
 
         if (min_start_radius < 0).any():
             raise ValueError("min_start_radius must be larger than zero.")
