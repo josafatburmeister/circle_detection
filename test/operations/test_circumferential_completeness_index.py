@@ -1,4 +1,4 @@
-""" Tests for :code:`circle_detection.operations.circumferential_completeness_index`. """
+"""Tests for :code:`circle_detection.operations.circumferential_completeness_index`."""
 
 import multiprocessing
 import time

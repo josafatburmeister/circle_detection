@@ -1,4 +1,4 @@
-""" Tests for :code:`circle_detection.CircleDetector`. """
+"""Tests for :code:`circle_detection.CircleDetector`."""
 
 from typing import Any, Dict
 
@@ -14,21 +14,26 @@ class TestCircleDetector:
     """Tests for :code:`circle_detection.CircleDetector`. Since this is an abstract class, it is tested using the
     derived class :code:`circle_detection.Ransac`"""
 
-    @pytest.mark.parametrize("pass_max_dist", [True, False])
-    def test_filtering_circumferential_completeness_index(self, pass_max_dist: bool):
+    @pytest.mark.parametrize("pass_max_dist, pass_bandwidth", [(True, True), (False, True), (False, False)])
+    def test_filtering_circumferential_completeness_index(self, pass_max_dist: bool, pass_bandwidth: bool):
         original_circles = np.array([[0, 0, 0.5]])
         xy = generate_circle_points(original_circles, min_points=100, max_points=100, variance=0)
         bandwidth = 0.01
+
+        circle_detector = Ransac(bandwidth=bandwidth)
 
         max_dist = None
         if pass_max_dist:
             max_dist = bandwidth
 
-        circle_detector = Ransac(bandwidth=bandwidth)
         circle_detector.detect(
             xy,
             num_workers=1,
         )
+
+        if not pass_bandwidth:
+            delattr(circle_detector, "_bandwidth")
+
         circle_detector.filter(
             max_circles=1,
             min_circumferential_completeness_idx=0.9,
@@ -42,10 +47,15 @@ class TestCircleDetector:
 
         np.testing.assert_almost_equal(original_circles[0], circle_detector.circles[0], decimal=10)
 
+        circle_detector._bandwidth = bandwidth  # pylint: disable=protected-access
         circle_detector.detect(
             xy[:50],
             num_workers=1,
         )
+
+        if not pass_bandwidth:
+            delattr(circle_detector, "_bandwidth")
+
         circle_detector.filter(
             max_circles=1,
             min_circumferential_completeness_idx=0.9,

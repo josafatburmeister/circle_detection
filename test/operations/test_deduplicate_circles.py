@@ -1,4 +1,4 @@
-""" Tests for circle_detection.operations.deduplicate_circles. """
+"""Tests for circle_detection.operations.deduplicate_circles."""
 
 import numpy as np
 import pytest
