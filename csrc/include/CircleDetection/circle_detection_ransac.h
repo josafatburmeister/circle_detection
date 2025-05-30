@@ -186,7 +186,9 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_ransac(
           // fit circle to all consensus points
           circle = fit_circle_lsq<scalar_T>(consensus_xy);
 
-          if (circle(2) == -1) {
+          if (circle(2) == -1 || circle(0) < break_min_x(batch_idx) || circle(0) > break_max_x(batch_idx) ||
+              circle(1) < break_min_y(batch_idx) || circle(1) > break_max_y(batch_idx) ||
+              circle(2) < break_min_radius(batch_idx) || circle(2) > break_max_radius(batch_idx)) {
             break;
           }
 
