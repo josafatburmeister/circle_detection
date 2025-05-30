@@ -9,5 +9,5 @@ circle\_detection
 
 .. automodule:: circle_detection
    :members:
-   :undoc-members:
    :show-inheritance:
+   :undoc-members:
