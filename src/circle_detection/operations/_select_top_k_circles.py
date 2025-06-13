@@ -83,6 +83,6 @@ def select_top_k_circles(
     selected_indices = np.sort(selected_indices)
 
     filtered_batch_lengths = np.full(len(batch_lengths), fill_value=k, dtype=np.int64)
-    filtered_batch_lengths = np.minimum(filtered_batch_lengths, batch_lengths)  # type: ignore[assignment]
+    filtered_batch_lengths = np.minimum(filtered_batch_lengths, batch_lengths)
 
     return circles[selected_indices], fitting_scores[selected_indices], filtered_batch_lengths, selected_indices

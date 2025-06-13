@@ -318,7 +318,6 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
                        next_radius) /
                       bandwidth;
                   auto next_loss = next_scaled_residuals.unaryExpr(&CircleDetection::loss_fn_scalar<scalar_T>).mean();
-                  // fitting_score = -1 * next_loss / bandwidth;
 
                   actual_loss_decrease = fitting_loss - next_loss;
                   expected_loss_decrease = -1 * armijo_min_decrease_percentage * step_size *
