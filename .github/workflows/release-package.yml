@@ -20,25 +20,26 @@ jobs:
     strategy:
       matrix:
         buildplat:
-          - [ubuntu-latest, manylinux_x86_64, ""]
-          - [ubuntu-latest, musllinux_x86_64, ""]
+          - [ubuntu-latest, manylinux_x86_64]
+          - [ubuntu-latest, musllinux_x86_64]
 
           # the macos-14 runner uses an Apple silicon chip, while the macos-13 runner uses an Intel chip
-          - [macos-13, macosx_x86_64, ""]
-          - [macos-14, macosx_arm64, accelerate]
-          - [macos-15, macosx_arm64, accelerate]
+          - [macos-14, macosx_arm64]
+          - [macos-15, macosx_arm64]
+          - [macos-15-intel, macosx_x86_64]
+          - [macos-26, macosx_arm64]
 
-          - [windows-latest, win_amd64, ""]
-          - [windows-latest, win32, ""]
+          - [windows-latest, win_amd64]
+          - [windows-latest, win32]
         python: ["cp39", "cp310", "cp311", "cp312", "cp313", "cp313t", "pp39", "pp310"]
         exclude:
-          - buildplat: [ubuntu-latest, musllinux_x86_64, ""]
+          - buildplat: [ubuntu-latest, musllinux_x86_64]
             python: "pp39"
-          - buildplat: [ubuntu-latest, musllinux_x86_64, ""]
+          - buildplat: [ubuntu-latest, musllinux_x86_64]
             python: "pp310"
-          - buildplat: [windows-latest, win32, ""]
+          - buildplat: [windows-latest, win32]
             python: "pp39"
-          - buildplat: [windows-latest, win32, ""]
+          - buildplat: [windows-latest, win32]
             python: "pp310"
     steps:
       # Note: we need to checkout the repository at the workflow sha in case during the workflow
@@ -64,20 +65,12 @@ jobs:
         if: ${{ startsWith(matrix.buildplat[0], 'macos') }}
         run: brew install libomp
       - name: Setup macOS >=14
-        if: ${{ startsWith(matrix.buildplat[0], 'macos') }} && ${{ matrix.buildplat[2] == 'accelerate'}}
+        if: ${{ startsWith(matrix.buildplat[0], 'macos') }}
         shell: bash
         run: |
           # macosx_arm64 and macosx_x86_64 with accelerate
           # only target Sonoma onwards
           CIBW="MACOSX_DEPLOYMENT_TARGET=14.0 RUNNER_OS=macOS"
-          echo "CIBW_ENVIRONMENT_MACOS=$CIBW" >> "$GITHUB_ENV"
-        env:
-          MAC_OS_VERSION: ${{ matrix.buildplat[0] }}
-      - name: Setup macOS 13
-        if: ${{ startsWith(matrix.buildplat[0], 'macos') }} && ${{ matrix.buildplat[2] != 'accelerate'}}
-        shell: bash
-        run: |
-          CIBW="MACOSX_DEPLOYMENT_TARGET=${MAC_OS_VERSION/macos-/}.0 RUNNER_OS=macOS"
           echo "CIBW_ENVIRONMENT_MACOS=$CIBW" >> "$GITHUB_ENV"
         env:
           MAC_OS_VERSION: ${{ matrix.buildplat[0] }}
@@ -90,7 +83,7 @@ jobs:
           CIBW_TEST_REQUIRES: pytest
       - uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheels-${{ matrix.python }}-${{ matrix.buildplat[0] }}-${{ matrix.buildplat[1] }}-${{ matrix.buildplat[2] }}
+          name: cibw-wheels-${{ matrix.python }}-${{ matrix.buildplat[0] }}-${{ matrix.buildplat[1] }}
           path: ./wheelhouse/*.whl
 
   build-sdist:
