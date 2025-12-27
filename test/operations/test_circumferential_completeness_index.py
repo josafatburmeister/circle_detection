@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from circle_detection.operations import circumferential_completeness_index, filter_circumferential_completeness_index
+
 from test.utils import generate_circles, generate_circle_points  # pylint: disable=wrong-import-order
 
 
