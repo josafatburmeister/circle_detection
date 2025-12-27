@@ -19,7 +19,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-15-intel, macos-latest]
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-15-intel, macos-latest]  #  windows-11-arm,
     steps:
       # Note: we need to checkout the repository at the workflow sha in case during the workflow
       # the branch was updated. To keep PSR working with the configured release branches,
@@ -45,18 +45,19 @@ jobs:
 
           cmake -S . -B build \
             -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/llvm-project/openmp/install" \
             -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
             -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
             -DLIBOMP_ENABLE_SHARED=ON
+          echo "${{ github.workspace }}/llvm-project/openmp/install"
 
           cmake --build build -j
           cmake --install build
-          echo "LDFLAGS=-L$PWD/install/lib" >> $GITHUB_ENV
-          echo "CPPFLAGS=-I$PWD/install/include" >> $GITHUB_ENV
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.21.3
         env:
+          LDFLAGS: "-L${{ github.workspace }}/llvm-project/openmp/install/lib"
+          CPPFLAGS: "-I${{ github.workspace }}/llvm-project/openmp/install/include"
           CIBW_FREE_THREADED_SUPPORT: True
           CIBW_TEST_COMMAND: pytest {package}/test
           CIBW_TEST_REQUIRES: pytest
