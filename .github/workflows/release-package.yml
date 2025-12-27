@@ -37,12 +37,23 @@ jobs:
           python -m pip install --upgrade pip
           pip install build wheel python-semantic-release
           semantic-release version --no-commit --skip-build --no-vcs-release --no-tag
-      - name: Set up Homebrew
+      - name: Install OpenMP on MacOS
         if: ${{ startsWith(matrix.os, 'macos') }}
-        uses: Homebrew/actions/setup-homebrew@master
-      - name: Install OpenMP
-        if: ${{ startsWith(matrix.os, 'macos') }}
-        run: brew install libomp
+        run: |
+          git clone --depth 1 https://github.com/llvm/llvm-project.git
+          cd llvm-project/openmp
+
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="$PWD/install" \
+            -DCMAKE_OSX_ARCHITECTURES=arm64;x86_64 \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0 \
+            -DLIBOMP_ENABLE_SHARED=ON
+
+          cmake --build build -j
+          cmake --install build
+          echo "LDFLAGS=-L$PWD/install/lib" >> $GITHUB_ENV
+          echo "CPPFLAGS="-I$PWD/install/include" >> $GITHUB_ENV
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.21.3
         env:
