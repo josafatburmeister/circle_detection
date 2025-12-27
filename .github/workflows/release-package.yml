@@ -53,7 +53,7 @@ jobs:
           cmake --build build -j
           cmake --install build
           echo "LDFLAGS=-L$PWD/install/lib" >> $GITHUB_ENV
-          echo "CPPFLAGS="-I$PWD/install/include" >> $GITHUB_ENV
+          echo "CPPFLAGS=-I$PWD/install/include" >> $GITHUB_ENV
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.21.3
         env:
