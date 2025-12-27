@@ -19,27 +19,7 @@ jobs:
     runs-on: ${{ matrix.buildplat[0] }}
     strategy:
       matrix:
-        buildplat:
-          - [ubuntu-latest, manylinux_x86_64]
-          - [ubuntu-latest, musllinux_x86_64]
-
-          # the macos-14 runner uses an Apple silicon chip, while the macos-13 runner uses an Intel chip
-          - [macos-14, macosx_arm64]
-          - [macos-15, macosx_arm64]
-          - [macos-15-intel, macosx_x86_64]
-
-          - [windows-latest, win_amd64]
-          - [windows-latest, win32]
-        python: ["cp39", "cp310", "cp311", "cp312", "cp313", "cp313t", "pp39", "pp310"]
-        exclude:
-          - buildplat: [ubuntu-latest, musllinux_x86_64]
-            python: "pp39"
-          - buildplat: [ubuntu-latest, musllinux_x86_64]
-            python: "pp310"
-          - buildplat: [windows-latest, win32]
-            python: "pp39"
-          - buildplat: [windows-latest, win32]
-            python: "pp310"
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-15-intel, macos-latest]
     steps:
       # Note: we need to checkout the repository at the workflow sha in case during the workflow
       # the branch was updated. To keep PSR working with the configured release branches,
@@ -58,31 +38,20 @@ jobs:
           pip install build wheel python-semantic-release
           semantic-release version --no-commit --skip-build --no-vcs-release --no-tag
       - name: Set up Homebrew
-        if: ${{ startsWith(matrix.buildplat[0], 'macos') }}
+        if: ${{ startsWith(matrix.os, 'macos') }}
         uses: Homebrew/actions/setup-homebrew@master
       - name: Install OpenMP
-        if: ${{ startsWith(matrix.buildplat[0], 'macos') }}
+        if: ${{ startsWith(matrix.os, 'macos') }}
         run: brew install libomp
-      - name: Setup macOS >=14
-        if: ${{ startsWith(matrix.buildplat[0], 'macos') }}
-        shell: bash
-        run: |
-          # macosx_arm64 and macosx_x86_64 with accelerate
-          # only target Sonoma onwards
-          CIBW="MACOSX_DEPLOYMENT_TARGET=14.0 RUNNER_OS=macOS"
-          echo "CIBW_ENVIRONMENT_MACOS=$CIBW" >> "$GITHUB_ENV"
-        env:
-          MAC_OS_VERSION: ${{ matrix.buildplat[0] }}
       - name: Build wheels
         uses: pypa/cibuildwheel@v2.21.3
         env:
           CIBW_FREE_THREADED_SUPPORT: True
-          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
           CIBW_TEST_COMMAND: pytest {package}/test
           CIBW_TEST_REQUIRES: pytest
       - uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheels-${{ matrix.python }}-${{ matrix.buildplat[0] }}-${{ matrix.buildplat[1] }}
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
 
   build-sdist:
@@ -117,61 +86,61 @@ jobs:
           name: cibw-sdist
           path: dist/*.tar.gz
 
-  release-package:
-    needs: [build-wheels, build-sdist]
-    if: github.repository == 'josafatburmeister/circle_detection' && github.ref_name == 'main'
-    runs-on: 'ubuntu-latest'
-    steps:
-      - name: Clean up potential remnants of past jobs
-        uses: AutoModality/action-clean@v1.1.0
-      - name: Check out repository at workflow sha
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          ref: ${{ github.sha }}
-      - name: Force correct release branch on workflow sha
-        run: |
-          git config --global --add safe.directory $(realpath .)
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          git config --global user.name "github-actions[bot]"
-          git checkout -B ${{ github.ref_name }} ${{ github.sha }}
-      - uses: actions/download-artifact@v4
-        with:
-          # unpacks all CIBW artifacts into dist/
-          pattern: cibw-*
-          path: dist
-          merge-multiple: true
-      - name: Setup up Python
-        uses: actions/setup-python@v3
-        with:
-          python-version: '3.13'
-      - name: Install build dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install build wheel python-semantic-release
-      - name: Create release
-        id: release
-        run: |
-          git config --global --add safe.directory $(realpath .)
-          semantic-release version --skip-build
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Publish package to TestPyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        if: steps.release.outputs.released == 'true'
-        with:
-          repository-url: https://test.pypi.org/legacy/
-          user: __token__
-          password: ${{ secrets.TEST_PYPI_API_TOKEN }}
-      - name: Test install from TestPyPI
-        run: |
-          python -m pip install \
-            --index-url https://test.pypi.org/simple/ \
-            --extra-index-url https://pypi.org/simple \
-            circle_detection
-      - name: Publish to PyPI
-        uses: pypa/gh-action-pypi-publish@release/v1
-        if: steps.release.outputs.released == 'true'
-        with:
-          user: __token__
-          password: ${{ secrets.PYPI_API_TOKEN }}
+  # release-package:
+  #   needs: [build-wheels, build-sdist]
+  #   if: github.repository == 'josafatburmeister/circle_detection' && github.ref_name == 'main'
+  #   runs-on: 'ubuntu-latest'
+  #   steps:
+  #     - name: Clean up potential remnants of past jobs
+  #       uses: AutoModality/action-clean@v1.1.0
+  #     - name: Check out repository at workflow sha
+  #       uses: actions/checkout@v4
+  #       with:
+  #         fetch-depth: 0
+  #         ref: ${{ github.sha }}
+  #     - name: Force correct release branch on workflow sha
+  #       run: |
+  #         git config --global --add safe.directory $(realpath .)
+  #         git config --global user.email "github-actions[bot]@users.noreply.github.com"
+  #         git config --global user.name "github-actions[bot]"
+  #         git checkout -B ${{ github.ref_name }} ${{ github.sha }}
+  #     - uses: actions/download-artifact@v4
+  #       with:
+  #         # unpacks all CIBW artifacts into dist/
+  #         pattern: cibw-*
+  #         path: dist
+  #         merge-multiple: true
+  #     - name: Setup up Python
+  #       uses: actions/setup-python@v3
+  #       with:
+  #         python-version: '3.13'
+  #     - name: Install build dependencies
+  #       run: |
+  #         python -m pip install --upgrade pip
+  #         pip install build wheel python-semantic-release
+  #     - name: Create release
+  #       id: release
+  #       run: |
+  #         git config --global --add safe.directory $(realpath .)
+  #         semantic-release version --skip-build
+  #       env:
+  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+  #     - name: Publish package to TestPyPI
+  #       uses: pypa/gh-action-pypi-publish@release/v1
+  #       if: steps.release.outputs.released == 'true'
+  #       with:
+  #         repository-url: https://test.pypi.org/legacy/
+  #         user: __token__
+  #         password: ${{ secrets.TEST_PYPI_API_TOKEN }}
+  #     - name: Test install from TestPyPI
+  #       run: |
+  #         python -m pip install \
+  #           --index-url https://test.pypi.org/simple/ \
+  #           --extra-index-url https://pypi.org/simple \
+  #           circle_detection
+  #     - name: Publish to PyPI
+  #       uses: pypa/gh-action-pypi-publish@release/v1
+  #       if: steps.release.outputs.released == 'true'
+  #       with:
+  #         user: __token__
+  #         password: ${{ secrets.PYPI_API_TOKEN }}
