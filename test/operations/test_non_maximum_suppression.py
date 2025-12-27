@@ -8,7 +8,7 @@ import pytest
 
 from circle_detection.operations import non_maximum_suppression
 
-from test.utils import generate_circles, generate_circle_points  # pylint: disable=wrong-import-order
+from test.utils import generate_circles  # pylint: disable=wrong-import-order
 
 
 class TestNonMaximumSuppression:
