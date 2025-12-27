@@ -20,7 +20,17 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
         self, pass_batch_lengths: bool, max_dist: Optional[float], scalar_dtype: np.dtype
     ):
         circles = np.array([[0, 0, 1], [5, 0, 1]], dtype=scalar_dtype)
-        xy = np.array([[0, 1], [0, -1], [1, 0], [-1, 0], [5, 1], [5, -1]], dtype=scalar_dtype)
+        xy = np.array(
+            [
+                [np.sqrt(0.5), np.sqrt(0.5)],
+                [np.sqrt(0.5), -np.sqrt(0.5)],
+                [-np.sqrt(0.5), np.sqrt(0.5)],
+                [-np.sqrt(0.5), -np.sqrt(0.5)],
+                [5, 1],
+                [5, -1],
+            ],
+            dtype=scalar_dtype,
+        )
 
         if pass_batch_lengths:
             batch_lengths_circles = np.array([len(circles)], dtype=np.int64)
@@ -101,7 +111,19 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
         batch_size = 1000
         circles = np.array([[[0, 0, 1], [5, 0, 1]]], dtype=np.float64)
         circles = np.repeat(circles, batch_size, axis=0).reshape(-1, 3).copy(order="F")
-        xy = np.array([[[0, 1], [0, -1], [1, 0], [-1, 0], [5, 1], [5, -1]]], dtype=np.float64)
+        xy = np.array(
+            [
+                [
+                    [np.sqrt(0.5), np.sqrt(0.5)],
+                    [np.sqrt(0.5), -np.sqrt(0.5)],
+                    [-np.sqrt(0.5), np.sqrt(0.5)],
+                    [-np.sqrt(0.5), -np.sqrt(0.5)],
+                    [5, 1],
+                    [5, -1],
+                ]
+            ],
+            dtype=np.float64,
+        )
         xy = np.repeat(xy, batch_size, axis=0).reshape(-1, 2).copy(order="F")
         batch_lengths_circles = np.array([2] * batch_size, dtype=np.int64)
         batch_lengths_xy = np.array([6] * batch_size, dtype=np.int64)
