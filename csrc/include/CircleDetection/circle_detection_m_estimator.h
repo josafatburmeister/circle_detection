@@ -104,6 +104,8 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_m_estima
 
   std::vector<ArrayX2<scalar_T>> xy_per_batch(num_batches);
 
+  std::cout << "num_workers m estimator " << num_workers << std::endl;
+
   // to improve the numerical stability the data are shifted before the circle detection
   // after circle detection, the inverse of the normalization is applied to the circle parameters
 #pragma omp parallel for num_threads(num_workers)

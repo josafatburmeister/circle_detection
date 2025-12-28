@@ -132,6 +132,8 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_ransac(
 
   std::vector<ArrayX2<scalar_T>> xy_per_batch(num_batches);
 
+  std::cout << "num_workers ransac- " << num_workers << std::endl;
+
 #pragma omp parallel for num_threads(num_workers)
   for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     xy_per_batch[batch_idx] = xy(Eigen::seqN(batch_starts(batch_idx), batch_lengths(batch_idx)), Eigen::all);
