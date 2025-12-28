@@ -52,7 +52,7 @@ jobs:
 
           cmake --build build -j
           cmake --install build
-      - name: Build wheels
+      - name: Build MacOS wheels
         if: ${{ startsWith(matrix.os, 'macos') }}
         uses: pypa/cibuildwheel@v2.21.3
         env:
@@ -62,7 +62,7 @@ jobs:
           CIBW_CONFIG_SETTINGS: cmake.args=-DOPENMP_ROOT=${{ github.workspace }}/llvm-project/openmp/install
           CIBW_SKIP: "pp39-macosx_arm64"
           DYLD_LIBRARY_PATH: "${{ github.workspace }}/llvm-project/openmp/install/lib"
-      - name: Build wheels
+      - name: Build Linux/Windows wheels
         if: ${{ !startsWith(matrix.os, 'macos') }}
         uses: pypa/cibuildwheel@v2.21.3
         env:
