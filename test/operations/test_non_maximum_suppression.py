@@ -73,12 +73,12 @@ class TestNonMaximumSuppression:
 
     @pytest.mark.skipif(multiprocessing.cpu_count() <= 1, reason="Testing of multi-threading requires multiple cores.")
     def test_multi_threading(self):
-        batch_size = 100
+        batch_size = 200
 
         print("multiprocessing.cpu_count()", multiprocessing.cpu_count())
 
         circles = generate_circles(
-            num_circles=1000,
+            num_circles=2000,
             min_radius=0.2,
             max_radius=10.1,
         )
@@ -91,7 +91,7 @@ class TestNonMaximumSuppression:
         single_threaded_runtime = 0
         multi_threaded_runtime = 0
 
-        repetitions = 4
+        repetitions = 8
         for _ in range(repetitions):
             start = time.perf_counter()
             non_maximum_suppression(circles, fitting_scores, batch_lengths, num_workers=1)

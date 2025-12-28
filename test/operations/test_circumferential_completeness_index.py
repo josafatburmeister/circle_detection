@@ -119,7 +119,7 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
             min_radius=0.2,
             max_radius=0.6,
         )
-        xy = generate_circle_points(circles, min_points=1000, max_points=2000, add_noise_points=True, variance=0.01)
+        xy = generate_circle_points(circles, min_points=2000, max_points=2000, add_noise_points=True, variance=0.01)
 
         batch_lengths_xy = np.array([len(xy)] * batch_size, dtype=np.int64)
         batch_lengths_circles = np.array([len(circles)] * batch_size, dtype=np.int64)
@@ -132,7 +132,7 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
         single_threaded_runtime = 0
         multi_threaded_runtime = 0
 
-        repetitions = 5
+        repetitions = 8
         for _ in range(repetitions):
             start = time.perf_counter()
             circumferential_completeness_index(

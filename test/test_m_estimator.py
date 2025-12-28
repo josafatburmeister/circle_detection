@@ -149,8 +149,8 @@ class TestMEstimator:
             max_radius=0.6,
         )
 
-        xy_1 = generate_circle_points(original_circles[:10], min_points=500, max_points=500, variance=0.0)
-        xy_2 = generate_circle_points(original_circles[10:], min_points=500, max_points=500, variance=0.0)
+        xy_1 = generate_circle_points(original_circles[:10], min_points=2000, max_points=2000, variance=0.0)
+        xy_2 = generate_circle_points(original_circles[10:], min_points=2000, max_points=2000, variance=0.0)
         batch_lengths = np.array([len(xy_1), len(xy_2)], dtype=np.int64)
 
         circle_detector = MEstimator(bandwidth=0.05)
@@ -158,7 +158,7 @@ class TestMEstimator:
         single_threaded_runtime = 0
         multi_threaded_runtime = 0
 
-        repetitions = 4
+        repetitions = 8
         for _ in range(repetitions):
             start = time.perf_counter()
             circle_detector.detect(

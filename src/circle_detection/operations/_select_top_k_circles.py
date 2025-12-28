@@ -70,9 +70,9 @@ def select_top_k_circles(
 
         return circles[sorting_indices][:k], fitting_scores[sorting_indices][:k], batch_lengths, selected_indices
 
-    # using np.int64 on 32 bit systems throws an error here, so we need to use np.long
+    # using np.int64 on 32 bit systems throws an error here, so we need to use np.intp
     # see https://github.com/numpy/numpy/issues/4384
-    batch_indices = np.repeat(np.arange(len(batch_lengths), dtype=circles.dtype), batch_lengths.astype(np.long))
+    batch_indices = np.repeat(np.arange(len(batch_lengths), dtype=circles.dtype), batch_lengths.astype(np.intp))
     sorting_indices = np.lexsort((-1 * fitting_scores, batch_indices))
     selected_indices = np.cumsum(np.concatenate(([0], batch_lengths)))[:-1]
 
