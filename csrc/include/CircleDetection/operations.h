@@ -76,13 +76,19 @@ ArrayX<scalar_T> circumferential_completeness_index(
     ArrayX<scalar_T> circle = circles(idx, Eigen::all);
     std::cout << "step 5 " << idx << std::endl;
     std::cout << "circle " << circle << std::endl;
+    std::cout << "batch_idx " << batch_idx << std::endl;
+    std::cout << "batch_starts_xy(batch_idx) " << batch_starts_xy(batch_idx) << std::endl;
+    std::cout << "batch_lengths_xy(batch_idx) " << batch_lengths_xy(batch_idx) << std::endl;
 
-    ArrayX2<scalar_T> centered_xy =
-        xy(Eigen::seqN(batch_starts_xy(batch_idx), batch_lengths_xy(batch_idx)), Eigen::all).rowwise() -
-        circle({0, 1}).transpose();
-    std::cout << "step 6.0 " << idx << std::endl;
-    ArrayX<scalar_T> radii = centered_xy.rowwise().norm();
+    auto current_xy = xy(Eigen::seqN(batch_starts_xy(batch_idx), batch_lengths_xy(batch_idx)), Eigen::all).rowwise();
+
     std::cout << "step 6.1 " << idx << std::endl;
+    std::cout << "circle({0, 1} " << circle({0, 1}) << std::endl;
+
+    ArrayX2<scalar_T> centered_xy = current_xy - circle({0, 1}).transpose();
+    std::cout << "step 6.2 " << idx << std::endl;
+    ArrayX<scalar_T> radii = centered_xy.rowwise().norm();
+    std::cout << "step 6.3 " << idx << std::endl;
 
     if (centered_xy.rows() == 0) {
       circumferential_completeness_indices(idx) = 0.0;
