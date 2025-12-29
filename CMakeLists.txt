@@ -10,6 +10,8 @@ set(CMAKE_CXX_STANDARD_REQUIRED)
 option(BUILD_PYTHON_BINDINGS "Build the Python bindings." ON)
 option(BUILD_LIB "Build the header-only library." ON)
 
+message("CMAKE_BUILD_TYPE", "${CMAKE_BUILD_TYPE}")
+
 # Read the package version from pyproject.toml using a regular expression
 set(PYPROJECT_FILE "${CMAKE_SOURCE_DIR}/pyproject.toml")
 file(READ "${PYPROJECT_FILE}" PYPROJECT_CONTENTS)
