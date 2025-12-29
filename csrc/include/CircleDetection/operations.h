@@ -78,6 +78,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
   std::cout << "num_workers" << num_workers << std::endl;
 
   const ArrayX2<scalar_T> xy_copy = xy.eval();
+  std::cout << "xy copy " << std::endl;
   const ArrayXl batch_lengths_xy_copy = batch_lengths_xy.eval();
   const ArrayXl batch_lengths_circles_copy = batch_lengths_circles.eval();
 
