@@ -96,7 +96,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
     std::cout << "batch_lengths_xy " << batch_lengths_xy_copy << std::endl;
     std::cout << "batch_lengths_xy(batch_idx) " << batch_lengths_xy_copy(0) << std::endl;
     std::cout << "batch_idx" << batch_idx << std::endl;
-    Eigen::RowVector3<scalar_T> circle = circles_copy(idx, Eigen::all);
+    Eigen::RowVector3<scalar_T> circle = circles_copy(idx, Eigen::all).eval();
     std::cout << "step 5 " << idx << std::endl;
     std::cout << "circle " << circle << std::endl;
     std::cout << "batch_idx " << batch_idx << std::endl;
@@ -108,7 +108,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
 
     std::cout << "indexer " << std::endl;
 
-    auto current_xy = xy_copy(indexer, Eigen::all);
+    auto current_xy = xy_copy(indexer, Eigen::all).eval();
 
     std::cout << "step 6.1 " << idx << std::endl;
     std::cout << "circle({0, 1} " << circle({0, 1}) << std::endl;
@@ -135,7 +135,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
           }
         }
       }
-      ArrayX2<scalar_T> circle_xy = centered_xy(circle_xy_indices, Eigen::all);
+      ArrayX2<scalar_T> circle_xy = centered_xy(circle_xy_indices, Eigen::all).eval();
 
       std::cout << "step 7 " << idx << std::endl;
 
