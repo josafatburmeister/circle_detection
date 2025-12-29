@@ -118,11 +118,13 @@ ArrayX<scalar_T> circumferential_completeness_index(
     std::cout << "step 6.2 " << idx << std::endl;
     ArrayX<scalar_T> radii = centered_xy.rowwise().norm();
     std::cout << "step 6.3 " << idx << std::endl;
+    std::cout << "radii " << radii << std::endl;
 
     if (centered_xy.rows() == 0) {
       circumferential_completeness_indices(idx) = 0.0;
     } else {
       std::vector<int64_t> circle_xy_indices;
+        std::cout << "step 6.4 " << idx << std::endl;
       if (max_dist < 0) {
         for (int64_t i = 0; i < radii.rows(); ++i) {
           if (radii(i) >= 0.7 * circle(2) && radii(i) <= 1.3 * circle(2)) {
@@ -136,6 +138,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
           }
         }
       }
+      std::cout << "circle_xy_indices " << circle_xy_indices << std::endl;
       ArrayX2<scalar_T> circle_xy = centered_xy(circle_xy_indices, Eigen::all).eval();
 
     //   std::cout << "step 7 " << idx << std::endl;
