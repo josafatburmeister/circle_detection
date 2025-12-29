@@ -52,11 +52,11 @@ jobs:
 
           cmake --build build -j
           cmake --install build
-      - name: Show MSVC version
-        if: ${{ startsWith(matrix.os, 'windows') }}
-        shell: pwsh
-        run: |
-          cl /Bv
+      # - name: Show MSVC version
+      #   if: ${{ startsWith(matrix.os, 'windows') }}
+      #   shell: pwsh
+      #   run: |
+      #     cl /Bv
       - name: Build MacOS wheels
         if: ${{ startsWith(matrix.os, 'macos') }}
         uses: pypa/cibuildwheel@v2.21.3
