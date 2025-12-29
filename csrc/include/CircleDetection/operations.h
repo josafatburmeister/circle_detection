@@ -135,17 +135,17 @@ ArrayX<scalar_T> circumferential_completeness_index(
         std::cout << "max dist < 0" << std::endl;
         for (int64_t i = 0; i < radii.rows(); ++i) {
           std::cout << "circle " << circle << std::endl;
-          if (radii(i) >= 0.7 * circle(2) && radii(i) <= 1.3 * circle(2)) {
-            std::cout << "push back" << std::endl;
-            circle_xy_indices.push_back(i);
-          }
+          // if (radii(i) >= 0.7 * circle(2) && radii(i) <= 1.3 * circle(2)) {
+          //   std::cout << "push back" << std::endl;
+          //   circle_xy_indices.push_back(i);
+          // }
         }
       } else {
         std::cout << "max dist > 0" << std::endl;
         for (int64_t i = 0; i < radii.rows(); ++i) {
-          if (std::abs(radii(i) - circle(2)) <= max_dist_copy) {
-            circle_xy_indices.push_back(i);
-          }
+          // if (std::abs(radii(i) - circle(2)) <= max_dist_copy) {
+          //   circle_xy_indices.push_back(i);
+          // }
         }
       }
     //   std::cout << "circle_xy_indices " << std::endl;
