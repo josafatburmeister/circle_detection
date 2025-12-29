@@ -5,6 +5,15 @@ __all__ = [
     "filter_circumferential_completeness_index",
 ]
 
+print("------")
+import platform, struct, sys
+print(platform.platform())
+print(platform.machine())
+print(struct.calcsize("P")*8, "bit")
+print(sys.executable)
+print("+++++++++++++")
+import os
+
 from typing import Optional, Tuple
 
 import numpy as np
@@ -15,6 +24,9 @@ from circle_detection.operations._operations_cpp import (  # type: ignore[import
 )
 from circle_detection.type_aliases import FloatArray, LongArray
 
+import circle_detection.operations._operations_cpp as my_module
+
+print("module file:", os.path.abspath(my_module))
 
 def circumferential_completeness_index(
     circles: FloatArray,
@@ -104,12 +116,6 @@ def circumferential_completeness_index(
         batch_lengths_xy = np.array([len(xy)], dtype=np.int64)
     if max_dist is None:
         max_dist = -1
-
-    import platform, struct, sys
-    print(platform.platform())
-    print(platform.machine())
-    print(struct.calcsize("P")*8, "bit")
-    print(sys.executable)
 
     return circumferential_completeness_index_cpp(
         circles, xy, batch_lengths_circles, batch_lengths_xy, int(num_regions), float(max_dist), int(num_workers)
