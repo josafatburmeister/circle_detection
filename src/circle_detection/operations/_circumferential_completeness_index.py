@@ -194,9 +194,14 @@ def filter_circumferential_completeness_index(
         raise ValueError("batch_lengths_xy must not be None if batch_lengths_circles is specified.")
 
     if batch_lengths_circles is None:
-        batch_lengths_circles = np.array([len(circles)], dtype=np.int64)
+        batch_lengths_circles = np.array([len(circles)], dtype=np.int64, order="F")
+    else:
+        print("copy")
+        batch_lengths_circles = batch_lengths_circles.copy(order="F")
     if batch_lengths_xy is None:
-        batch_lengths_xy = np.array([len(xy)], dtype=np.int64)
+        batch_lengths_xy = np.array([len(xy)], dtype=np.int64, order="F")
+    else:
+        batch_lengths_xy = batch_lengths_xy.copy(order="F")
     if max_dist is None:
         max_dist = -1
 

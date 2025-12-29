@@ -81,6 +81,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
   for (int64_t idx = 0; idx < circles.rows(); ++idx) {
     std::cout << "step 4 " << idx << std::endl;
     int64_t batch_idx = batch_indices(idx);
+    std::cout << "batch_lengths_xy " << batch_lengths_xy << std::endl;
     std::cout << "batch_lengths_xy(batch_idx) " << batch_lengths_xy(batch_idx) << std::endl;
     std::cout << "batch_idx" << batch_idx << std::endl;
     Eigen::RowVector3<scalar_T> circle = circles(idx, Eigen::all);
@@ -90,7 +91,6 @@ ArrayX<scalar_T> circumferential_completeness_index(
     std::cout << "batch_starts_xy(batch_idx) " << batch_starts_xy(batch_idx) << std::endl;
     std::cout << "test" << std::endl;
     std::cout << "batch_idx " << batch_idx << std::endl;
-    std::cout << "batch_lengths_xy " << batch_lengths_xy << std::endl;
 
     auto indexer = Eigen::seqN(batch_starts_xy(batch_idx), batch_lengths_xy(batch_idx));
 
