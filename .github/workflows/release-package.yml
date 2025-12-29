@@ -19,7 +19,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, macos-latest, macos-15-intel]  # windows-11-arm,
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-latest, macos-15-intel]
     steps:
       # Note: we need to checkout the repository at the workflow sha in case during the workflow
       # the branch was updated. To keep PSR working with the configured release branches,
@@ -52,6 +52,11 @@ jobs:
 
           cmake --build build -j
           cmake --install build
+      - name: Show MSVC version
+        if: ${{ startsWith(matrix.os, 'windows') }}
+        shell: pwsh
+        run: |
+          cl /Bv
       - name: Build MacOS wheels
         if: ${{ startsWith(matrix.os, 'macos') }}
         uses: pypa/cibuildwheel@v2.21.3

@@ -70,11 +70,11 @@ class TestRansac:
             max_radius=1.5,
         )
 
-        xy_1 = generate_circle_points(original_circles[:20], min_points=3000, max_points=3000, variance=0.0)
-        xy_2 = generate_circle_points(original_circles[20:], min_points=3000, max_points=3000, variance=0.0)
+        xy_1 = generate_circle_points(original_circles[:20], min_points=4000, max_points=4000, variance=0.0)
+        xy_2 = generate_circle_points(original_circles[20:], min_points=4000, max_points=4000, variance=0.0)
         batch_lengths = np.array([len(xy_1), len(xy_2)], dtype=np.int64)
 
-        circle_detector = Ransac(bandwidth=0.05, iterations=2000)
+        circle_detector = Ransac(bandwidth=0.05, iterations=4000)
 
         single_threaded_runtime = 0
         multi_threaded_runtime = 0
