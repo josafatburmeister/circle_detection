@@ -89,6 +89,9 @@ ArrayX<scalar_T> circumferential_completeness_index(
   scalar_T max_dist_copy = max_dist;
   int64_t num_regions_copy = num_regions;
 
+  std::cout << "num_regions_copy " << num_regions_copy << std::endl;
+  std::cout << "max_dist_copy " << max_dist_copy << std::endl;
+
   #pragma omp parallel for shared(angular_step_size, batch_indices, xy_copy, circles_copy, batch_starts_xy, batch_lengths_xy_copy, batch_lengths_circles_copy, max_dist_copy, num_regions_copy) num_threads(num_workers)
   for (int64_t idx = 0; idx < circles_copy.rows(); ++idx) {
     circumferential_completeness_indices(idx) = 0.0;
