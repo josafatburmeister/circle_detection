@@ -70,29 +70,33 @@ ArrayX<scalar_T> circumferential_completeness_index(
   std::cout << "step 3" << std::endl;
   std::cout << "batch_lengths_xy " << batch_lengths_xy << std::endl;
   std::cout << "batch_starts_xy " << batch_starts_xy << std::endl;
+  std::cout << "batch_indices" << batch_indices << std::endl;
 
 #pragma omp parallel for default(shared) num_threads(num_workers)
   for (int64_t idx = 0; idx < circles.rows(); ++idx) {
     std::cout << "step 4 " << idx << std::endl;
     int64_t batch_idx = batch_indices(idx);
     std::cout << "batch_idx" << batch_idx << std::endl;
-    ArrayX<scalar_T> circle = circles(idx, Eigen::all);
+    Eigen::RowVector3<scalar_T> circle = circles(idx, Eigen::all);
     std::cout << "step 5 " << idx << std::endl;
     std::cout << "circle " << circle << std::endl;
     std::cout << "batch_idx " << batch_idx << std::endl;
     std::cout << "batch_starts_xy(batch_idx) " << batch_starts_xy(batch_idx) << std::endl;
+    std::cout << "test" << std::endl;
+    std::cout << "batch_idx " << batch_idx << std::endl;
+    std::cout << "batch_lengths_xy " << batch_lengths_xy << std::endl;
     std::cout << "batch_lengths_xy(batch_idx) " << batch_lengths_xy(batch_idx) << std::endl;
 
     auto indexer = Eigen::seqN(batch_starts_xy(batch_idx), batch_lengths_xy(batch_idx));
 
     std::cout << "indexer " << std::endl;
 
-    auto current_xy = xy(indexer, Eigen::all).rowwise();
+    auto current_xy = xy(indexer, Eigen::all);
 
     std::cout << "step 6.1 " << idx << std::endl;
     std::cout << "circle({0, 1} " << circle({0, 1}) << std::endl;
 
-    ArrayX2<scalar_T> centered_xy = current_xy - circle({0, 1}).transpose();
+    ArrayX2<scalar_T> centered_xy = current_xy.rowwise() - circle({0, 1}).array();
     std::cout << "step 6.2 " << idx << std::endl;
     ArrayX<scalar_T> radii = centered_xy.rowwise().norm();
     std::cout << "step 6.3 " << idx << std::endl;
