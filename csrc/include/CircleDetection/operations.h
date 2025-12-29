@@ -126,11 +126,11 @@ ArrayX<scalar_T> circumferential_completeness_index(
     std::cout << "step 6.3 " << idx << std::endl;
     std::cout << "radii " << radii << std::endl;
 
-    // if (centered_xy.rows() == 0) {
-    //   circumferential_completeness_indices(idx) = 0.0;
-    // } else {
-    //   std::vector<int64_t> circle_xy_indices = {};
-    //     std::cout << "step 6.4 " << idx << std::endl;
+    if (centered_xy.rows() == 0) {
+      circumferential_completeness_indices(idx) = 0.0;
+    } else {
+      std::vector<int64_t> circle_xy_indices = {};
+        std::cout << "step 6.4 " << idx << std::endl;
     //   if (max_dist_copy < 0) {
     //     std::cout << "max dist < 0" << std::endl;
     //     for (int64_t i = 0; i < radii.rows(); ++i) {
@@ -165,7 +165,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
     //   std::set<int64_t> filled_sections(sections.data(), sections.data() + sections.size());
 
     //   circumferential_completeness_indices(idx) = filled_sections.size() / static_cast<scalar_T>(num_regions_copy);
-    // }
+    }
   }
   std::cout << "step 4" << std::endl;
 
