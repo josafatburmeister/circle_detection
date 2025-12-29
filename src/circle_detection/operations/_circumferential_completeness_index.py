@@ -26,7 +26,7 @@ from circle_detection.type_aliases import FloatArray, LongArray
 
 import circle_detection.operations._operations_cpp as my_module
 
-print("module file:", os.path.abspath(my_module))
+print("module file:", os.path.abspath(my_module.__file__))
 
 def circumferential_completeness_index(
     circles: FloatArray,
