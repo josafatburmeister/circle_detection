@@ -30,6 +30,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
     int64_t num_regions,
     scalar_T max_dist,
     int num_workers = 1) {
+  std::cout << "step 1" << std::endl;
   if (batch_lengths_circles.rows() != batch_lengths_xy.rows()) {
     throw std::invalid_argument("The length of batch_lengths_circles and batch_lengths_xy must be equal.");
   }
@@ -45,6 +46,8 @@ ArrayX<scalar_T> circumferential_completeness_index(
   }
 
   constexpr scalar_T PI = 3.14159265358979311600;
+
+  std::cout << "step 2" << std::endl;
 
   int64_t num_batches = batch_lengths_circles.size();
   ArrayX<scalar_T> circumferential_completeness_indices(circles.rows());
@@ -64,6 +67,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
     batch_start_circles += batch_lengths_circles(batch_idx);
     batch_start_xy += batch_lengths_xy(batch_idx);
   }
+  std::cout << "step 3" << std::endl;
 
 #pragma omp parallel for default(shared) num_threads(num_workers)
   for (int64_t idx = 0; idx < circles.rows(); ++idx) {
@@ -108,6 +112,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
       circumferential_completeness_indices(idx) = filled_sections.size() / static_cast<scalar_T>(num_regions);
     }
   }
+  std::cout << "step 4" << std::endl;
 
   return circumferential_completeness_indices;
 }
