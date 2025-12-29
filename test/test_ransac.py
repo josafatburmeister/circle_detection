@@ -65,13 +65,13 @@ class TestRansac:
         print("multiprocessing.cpu_count()", multiprocessing.cpu_count())
 
         original_circles = generate_circles(
-            num_circles=20,
+            num_circles=40,
             min_radius=0.2,
-            max_radius=0.6,
+            max_radius=1.5,
         )
 
-        xy_1 = generate_circle_points(original_circles[:10], min_points=2000, max_points=2000, variance=0.0)
-        xy_2 = generate_circle_points(original_circles[10:], min_points=2000, max_points=2000, variance=0.0)
+        xy_1 = generate_circle_points(original_circles[:20], min_points=3000, max_points=3000, variance=0.0)
+        xy_2 = generate_circle_points(original_circles[20:], min_points=3000, max_points=3000, variance=0.0)
         batch_lengths = np.array([len(xy_1), len(xy_2)], dtype=np.int64)
 
         circle_detector = Ransac(bandwidth=0.05, iterations=2000)
@@ -79,13 +79,15 @@ class TestRansac:
         single_threaded_runtime = 0
         multi_threaded_runtime = 0
 
-        repetitions = 8
+        repetitions = 2
         for _ in range(repetitions):
             start = time.perf_counter()
             circle_detector.detect(
                 np.concatenate((xy_1, xy_2)),
                 batch_lengths=batch_lengths,
                 num_workers=1,
+                break_max_radius=0.2,
+                break_min_radius=1.5,
             )
             single_threaded_runtime += time.perf_counter() - start
             start = time.perf_counter()

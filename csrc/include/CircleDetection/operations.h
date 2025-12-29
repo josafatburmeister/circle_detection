@@ -65,8 +65,6 @@ ArrayX<scalar_T> circumferential_completeness_index(
     batch_start_xy += batch_lengths_xy(batch_idx);
   }
 
-  std::cout << "num_workers circ complt.- " << num_workers << std::endl;
-
 #pragma omp parallel for default(shared) num_threads(num_workers)
   for (int64_t idx = 0; idx < circles.rows(); ++idx) {
     int64_t batch_idx = batch_indices(idx);
@@ -179,8 +177,6 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl, ArrayXl> non_maximum_su
   std::vector<std::vector<int64_t>> selected_indices(num_batches);
   ArrayXl new_batch_lengths = ArrayXl::Constant(num_batches, 0);
   ArrayXl new_batch_starts = ArrayXl::Constant(num_batches, 0);
-
-  std::cout << "num_workers circ nms. " << num_workers << std::endl;
 
 #pragma omp parallel for default(shared) num_threads(num_workers)
   for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
