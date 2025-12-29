@@ -92,7 +92,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
   // std::cout << "num_regions_copy " << num_regions_copy << std::endl;
   std::cout << "max_dist_copy " << max_dist_copy << std::endl;
 
-  #pragma omp parallel for shared(angular_step_size, batch_indices, xy_copy, circles_copy, batch_starts_xy, batch_lengths_xy_copy, batch_lengths_circles_copy, max_dist_copy, num_regions_copy) num_threads(num_workers)
+  #pragma omp parallel for shared(angular_step_size, batch_indices, xy_copy, circles_copy, batch_starts_xy, batch_lengths_xy_copy, batch_lengths_circles_copy, max_dist_copy) num_threads(num_workers)
   for (int64_t idx = 0; idx < circles_copy.rows(); ++idx) {
     circumferential_completeness_indices(idx) = 0.0;
     std::cout << "step 4 " << idx << std::endl;
@@ -157,6 +157,14 @@ ArrayX<scalar_T> circumferential_completeness_index(
           circle_xy(Eigen::all, 1).binaryExpr(circle_xy(Eigen::all, 0), [](scalar_T y, scalar_T x) {
             return std::atan2(y, x);
           });
+
+      // shift from [-pi, pi] to [0, 2pi)
+      angles = angles + PI;
+
+      // guard against rounding putting exactly 2pi into the last bin
+      angles = angles.unaryExpr([](scalar_T a) {
+        return (a >= 2.0 * PI) ? (a - 2.0 * PI) : a;
+      });
 
       std::cout << "angles " << angles << std::endl;
 
