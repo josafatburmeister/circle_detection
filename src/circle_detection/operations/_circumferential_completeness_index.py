@@ -11,11 +11,15 @@ from typing import Optional, Tuple
 
 import numpy as np
 
+print("try import")
+
 from circle_detection.operations._operations_cpp import (  # type: ignore[import-not-found] # pylint: disable=import-error, no-name-in-module
     circumferential_completeness_index as circumferential_completeness_index_cpp,
     filter_circumferential_completeness_index as filter_circumferential_completeness_index_cpp,
 )
 from circle_detection.type_aliases import FloatArray, LongArray
+
+print("first import")
 
 import circle_detection.operations._operations_cpp as my_module
 
@@ -109,6 +113,8 @@ def circumferential_completeness_index(
         batch_lengths_xy = np.array([len(xy)], dtype=np.int64)
     if max_dist is None:
         max_dist = -1
+
+    print("before CPP call")
 
     return circumferential_completeness_index_cpp(
         circles, xy, batch_lengths_circles, batch_lengths_xy, int(num_regions), float(max_dist), int(num_workers)
