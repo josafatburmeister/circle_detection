@@ -45,6 +45,9 @@ ArrayX<scalar_T> circumferential_completeness_index(
     num_workers = omp_get_max_threads();
   }
 
+  Eigen::setNbThreads(1);
+  Eigen::initParallel();
+
   constexpr scalar_T PI = 3.14159265358979311600;
 
   std::cout << "step 2" << std::endl;
@@ -72,9 +75,9 @@ ArrayX<scalar_T> circumferential_completeness_index(
   std::cout << "batch_starts_xy " << batch_starts_xy << std::endl;
   std::cout << "batch_indices" << batch_indices << std::endl;
 
-  std::cout << "num_workers" << std::endl;
+  std::cout << "num_workers" << num_workers << std::endl;
 
-// #pragma omp parallel for default(shared) num_threads(num_workers)
+  #pragma omp parallel for default(shared) num_threads(num_workers)
   for (int64_t idx = 0; idx < circles.rows(); ++idx) {
     std::cout << "step 4 " << idx << std::endl;
     int64_t batch_idx = batch_indices(idx);
