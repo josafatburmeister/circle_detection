@@ -114,14 +114,6 @@ def circumferential_completeness_index(
     if max_dist is None:
         max_dist = -1
 
-    # if not batch_lengths_circles.flags.f_contiguous:
-    #     batch_lengths_circles = batch_lengths_circles.copy(order="F")
-
-    # if not batch_lengths_xy.flags.f_contiguous:
-    #     batch_lengths_xy = batch_lengths_xy.copy(order="F")
-
-    print("before CPP call")
-
     return circumferential_completeness_index_cpp(
         circles, xy, batch_lengths_circles, batch_lengths_xy, int(num_regions), float(max_dist), int(num_workers)
     )
