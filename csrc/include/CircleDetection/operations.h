@@ -25,8 +25,8 @@ template <typename scalar_T>
 ArrayX<scalar_T> circumferential_completeness_index(
     RefArrayX3<scalar_T> circles,
     RefArrayX2<scalar_T> xy,
-    RefArrayXl batch_lengths_circles,
-    RefArrayXl batch_lengths_xy,
+    ArrayXl batch_lengths_circles,
+    ArrayXl batch_lengths_xy,
     int64_t num_regions,
     scalar_T max_dist,
     int num_workers = 1) {
