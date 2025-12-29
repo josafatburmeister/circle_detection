@@ -23,8 +23,8 @@ scalar_T stddev(RefArrayX2<scalar_T> x) {
 
 template <typename scalar_T>
 ArrayX<scalar_T> circumferential_completeness_index(
-    RefArrayX3<scalar_T> circles,
-    RefArrayX2<scalar_T> xy,
+    ArrayX3<scalar_T> circles,
+    ArrayX2<scalar_T> xy,
     ArrayXl batch_lengths_circles,
     ArrayXl batch_lengths_xy,
     int64_t num_regions,
