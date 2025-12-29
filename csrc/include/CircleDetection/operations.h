@@ -115,16 +115,16 @@ ArrayX<scalar_T> circumferential_completeness_index(
 
     std::cout << "indexer " << std::endl;
 
-    // auto current_xy = xy_copy(indexer, Eigen::all).eval();
+    auto current_xy = xy_copy(indexer, Eigen::all).eval();
 
-    // std::cout << "step 6.1 " << idx << std::endl;
-    // std::cout << "circle({0, 1} " << circle({0, 1}) << std::endl;
+    std::cout << "step 6.1 " << idx << std::endl;
+    std::cout << "circle({0, 1} " << circle({0, 1}) << std::endl;
 
-    // ArrayX2<scalar_T> centered_xy = current_xy.rowwise() - circle({0, 1}).array();
-    // std::cout << "step 6.2 " << idx << std::endl;
-    // ArrayX<scalar_T> radii = centered_xy.rowwise().norm();
-    // std::cout << "step 6.3 " << idx << std::endl;
-    // std::cout << "radii " << radii << std::endl;
+    ArrayX2<scalar_T> centered_xy = current_xy.rowwise() - circle({0, 1}).array();
+    std::cout << "step 6.2 " << idx << std::endl;
+    ArrayX<scalar_T> radii = centered_xy.rowwise().norm();
+    std::cout << "step 6.3 " << idx << std::endl;
+    std::cout << "radii " << radii << std::endl;
 
     // if (centered_xy.rows() == 0) {
     //   circumferential_completeness_indices(idx) = 0.0;
