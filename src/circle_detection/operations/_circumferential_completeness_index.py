@@ -5,13 +5,6 @@ __all__ = [
     "filter_circumferential_completeness_index",
 ]
 
-print("------")
-import platform, struct, sys
-print(platform.platform())
-print(platform.machine())
-print(struct.calcsize("P")*8, "bit")
-print(sys.executable)
-print("+++++++++++++")
 import os
 
 from typing import Optional, Tuple

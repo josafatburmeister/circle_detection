@@ -9,7 +9,11 @@ import pytest
 
 from circle_detection.operations import circumferential_completeness_index, filter_circumferential_completeness_index
 
-from ..utils import generate_circles, generate_circle_points  # pylint: disable=wrong-import-order
+import sys
+
+sys.path.insert(0, '..')
+
+from test.utils import generate_circles, generate_circle_points  # pylint: disable=wrong-import-order
 
 
 class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-methods
@@ -225,6 +229,14 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
 
 
 if __name__ == "__main__":
+    print("------")
+    import platform, struct, sys
+    print(platform.platform())
+    print(platform.machine())
+    print(struct.calcsize("P")*8, "bit")
+    print(sys.executable)
+    print("+++++++++++++")
+
     tests = TestCircumferentialCompletenessIndex()
     tests.test_circumferential_completeness_index(pass_batch_lengths=True, max_dist=None, scalar_dtype=np.float64)
     print("Passed")
