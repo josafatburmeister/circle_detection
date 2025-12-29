@@ -80,7 +80,9 @@ ArrayX<scalar_T> circumferential_completeness_index(
   const ArrayX2<scalar_T> xy_copy = xy.eval();
   std::cout << "xy copy " << std::endl;
   const ArrayXl batch_lengths_xy_copy = batch_lengths_xy.eval();
+  std::cout << "batch_lengths_xy_copy " << std::endl;
   const ArrayXl batch_lengths_circles_copy = batch_lengths_circles.eval();
+  std::cout << "batch_lengths_circles_copy " << std::endl;
 
   #pragma omp parallel for default(shared) num_threads(num_workers)
   for (int64_t idx = 0; idx < circles.rows(); ++idx) {
