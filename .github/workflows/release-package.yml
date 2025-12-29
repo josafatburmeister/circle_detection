@@ -76,7 +76,7 @@ jobs:
           CIBW_TEST_REQUIRES: pytest
           # CIBW_CONFIG_SETTINGS_WINDOWS : cmake.args=-DSKBUILD_CMAKE_BUILD_TYPE=Debug, -DSKBUILD_CMAKE_CXX_FLAGS_RELEASE=
           CIBW_SKIP: "{cp39-win_arm64,cp310-win_arm64,cp312-win_arm64,cp313-win_arm64,cp313t-win_arm64}"
-          SKBUILD_CMAKE_BUILD_TYPE: ""Debug""
+          SKBUILD_CMAKE_BUILD_TYPE: "'Debug'"
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
