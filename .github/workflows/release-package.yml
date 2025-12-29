@@ -74,7 +74,7 @@ jobs:
           CIBW_FREE_THREADED_SUPPORT: True
           CIBW_TEST_COMMAND: pytest {package}/test
           CIBW_TEST_REQUIRES: pytest
-          CIBW_CONFIG_SETTINGS: cmake.args=-DCMAKE_CXX_FLAGS_RELEASE="/O1 /DNDEBUG"
+          CIBW_CONFIG_SETTINGS_WINDOWS : cmake.args=-DCMAKE_CXX_FLAGS_RELEASE="/O1 /DNDEBUG"
           CIBW_SKIP: "{cp39-win_arm64,cp310-win_arm64,cp311-win_arm64,cp312-win_arm64,cp313-win_arm64}"
       - uses: actions/upload-artifact@v4
         with:
