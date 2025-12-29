@@ -240,6 +240,6 @@ if __name__ == "__main__":
     print(sys.executable)
     print("+++++++++++++")
 
-    tests = TestCircumferentialCompletenessIndex()
-    tests.test_circumferential_completeness_index(pass_batch_lengths=True, max_dist=None, scalar_dtype=np.float64)
+    # tests = TestCircumferentialCompletenessIndex()
+    # tests.test_circumferential_completeness_index(pass_batch_lengths=True, max_dist=None, scalar_dtype=np.float64)
     print("Passed")
