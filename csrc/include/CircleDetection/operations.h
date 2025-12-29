@@ -89,21 +89,21 @@ ArrayX<scalar_T> circumferential_completeness_index(
   #pragma omp parallel for default(shared) num_threads(num_workers)
   for (int64_t idx = 0; idx < circles_copy.rows(); ++idx) {
     circumferential_completeness_indices(idx) = 0.0;
-    // std::cout << "step 4 " << idx << std::endl;
-    // int64_t batch_idx = batch_indices(idx);
-    // auto test = batch_lengths_xy_copy(0);
-    // std::cout << "test" << std::endl;
-    // std::cout << test << std::endl;
-    // std::cout << "batch_lengths_xy " << batch_lengths_xy_copy << std::endl;
-    // std::cout << "batch_lengths_xy(batch_idx) " << batch_lengths_xy_copy(0) << std::endl;
-    // std::cout << "batch_idx" << batch_idx << std::endl;
-    // Eigen::RowVector3<scalar_T> circle = circles_copy(idx, Eigen::all).eval();
-    // std::cout << "step 5 " << idx << std::endl;
-    // std::cout << "circle " << circle << std::endl;
-    // std::cout << "batch_idx " << batch_idx << std::endl;
-    // std::cout << "batch_starts_xy(batch_idx) " << batch_starts_xy(batch_idx) << std::endl;
-    // std::cout << "test" << std::endl;
-    // std::cout << "batch_idx " << batch_idx << std::endl;
+    std::cout << "step 4 " << idx << std::endl;
+    int64_t batch_idx = batch_indices(idx);
+    auto test = batch_lengths_xy_copy(0);
+    std::cout << "test" << std::endl;
+    std::cout << test << std::endl;
+    std::cout << "batch_lengths_xy " << batch_lengths_xy_copy << std::endl;
+    std::cout << "batch_lengths_xy(batch_idx) " << batch_lengths_xy_copy(0) << std::endl;
+    std::cout << "batch_idx" << batch_idx << std::endl;
+    Eigen::RowVector3<scalar_T> circle = circles_copy(idx, Eigen::all).eval();
+    std::cout << "step 5 " << idx << std::endl;
+    std::cout << "circle " << circle << std::endl;
+    std::cout << "batch_idx " << batch_idx << std::endl;
+    std::cout << "batch_starts_xy(batch_idx) " << batch_starts_xy(batch_idx) << std::endl;
+    std::cout << "test" << std::endl;
+    std::cout << "batch_idx " << batch_idx << std::endl;
 
     // auto indexer = Eigen::seqN(batch_starts_xy(batch_idx), batch_lengths_xy_copy(batch_idx));
 
