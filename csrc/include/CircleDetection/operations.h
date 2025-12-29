@@ -160,8 +160,8 @@ ArrayX<scalar_T> circumferential_completeness_index(
 
       std::cout << "angles " << angles << std::endl;
 
-      // ArrayXl sections =
-      //     (angles / angular_step_size).floor().unaryExpr([](scalar_T x) { return static_cast<int64_t>(x); });
+      ArrayXl sections =
+           (angles / angular_step_size).floor().unaryExpr([](scalar_T x) { return static_cast<int64_t>(x); });
       // sections = sections.unaryExpr([num_regions_copy](const int64_t x) { return x % num_regions_copy; });
 
       // std::set<int64_t> filled_sections(sections.data(), sections.data() + sections.size());
