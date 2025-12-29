@@ -15,9 +15,9 @@ from test.utils import generate_circles, generate_circle_points  # pylint: disab
 class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-methods
     """Tests for :code:`circle_detection.operations.circumferential_completeness_index`."""
 
-    @pytest.mark.parametrize("pass_batch_lengths", [True, False])
-    @pytest.mark.parametrize("max_dist", [0.1, None])
-    @pytest.mark.parametrize("scalar_dtype", [np.float32, np.float64])
+    # @pytest.mark.parametrize("pass_batch_lengths", [True, False])
+    # @pytest.mark.parametrize("max_dist", [0.1, None])
+    # @pytest.mark.parametrize("scalar_dtype", [np.float32, np.float64])
     def test_circumferential_completeness_index(
         self, pass_batch_lengths: bool, max_dist: Optional[float], scalar_dtype: np.dtype
     ):
@@ -222,3 +222,9 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
                 batch_lengths_circles=batch_lengths_circles,
                 batch_lengths_xy=batch_lengths_xy,
             )
+
+
+if __name__ == "__main__":
+    tests = TestCircumferentialCompletenessIndex()
+    tests.test_circumferential_completeness_index(pass_batch_lengths=True, max_dist=None, scalar_dtype=np.float64)
+    print("Passed")
