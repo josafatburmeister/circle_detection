@@ -75,12 +75,14 @@ ArrayX<scalar_T> circumferential_completeness_index(
     int64_t batch_idx = batch_indices(idx);
     ArrayX<scalar_T> circle = circles(idx, Eigen::all);
     std::cout << "step 5 " << idx << std::endl;
+    std::cout << "circle " << circle << std::endl;
 
     ArrayX2<scalar_T> centered_xy =
         xy(Eigen::seqN(batch_starts_xy(batch_idx), batch_lengths_xy(batch_idx)), Eigen::all).rowwise() -
         circle({0, 1}).transpose();
+    std::cout << "step 6.0 " << idx << std::endl;
     ArrayX<scalar_T> radii = centered_xy.rowwise().norm();
-    std::cout << "step 6 " << idx << std::endl;
+    std::cout << "step 6.1 " << idx << std::endl;
 
     if (centered_xy.rows() == 0) {
       circumferential_completeness_indices(idx) = 0.0;
