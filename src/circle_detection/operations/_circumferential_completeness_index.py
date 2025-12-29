@@ -105,6 +105,12 @@ def circumferential_completeness_index(
     if max_dist is None:
         max_dist = -1
 
+    import platform, struct, sys
+    print(platform.platform())
+    print(platform.machine())
+    print(struct.calcsize("P")*8, "bit")
+    print(sys.executable)
+
     return circumferential_completeness_index_cpp(
         circles, xy, batch_lengths_circles, batch_lengths_xy, int(num_regions), float(max_dist), int(num_workers)
     )
