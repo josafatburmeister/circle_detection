@@ -1,0 +1,13 @@
+  clang-tidy:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - name: Clean up potential remnants of past jobs
+        uses: AutoModality/action-clean@v1.1.0
+      - name: Checkout out repository
+        uses: actions/checkout@v4
+      - name: Lint C++ code with clang-tidy and post fixes as comments to pull request
+        uses: ZedThree/clang-tidy-review@v0.14.0
+        id: review-cpp
+      - if: steps.review-cpp.outputs.total_comments > 0
+        run: exit 1
