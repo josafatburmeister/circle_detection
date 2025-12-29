@@ -68,6 +68,8 @@ ArrayX<scalar_T> circumferential_completeness_index(
     batch_start_xy += batch_lengths_xy(batch_idx);
   }
   std::cout << "step 3" << std::endl;
+  std::cout << "batch_lengths_xy " << batch_lengths_xy << std::endl;
+  std::cout << "batch_starts_xy " << batch_starts_xy << std::endl;
 
 #pragma omp parallel for default(shared) num_threads(num_workers)
   for (int64_t idx = 0; idx < circles.rows(); ++idx) {
