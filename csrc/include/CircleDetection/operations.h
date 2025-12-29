@@ -85,7 +85,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
 
     auto indexer = Eigen::seqN(batch_starts_xy(batch_idx), batch_lengths_xy(batch_idx));
 
-    std::cout << "indexer " << indexer << std::endl;
+    std::cout << "indexer " << std::endl;
 
     auto current_xy = xy(indexer, Eigen::all).rowwise();
 
