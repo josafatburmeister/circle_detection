@@ -73,5 +73,4 @@ build_command = "python -m build"
 
 [tool.scikit-build]
 build.verbose = true
-cmake.build-type = "Debug"
 cmake.args = ["-DBUILD_LIB=OFF"]
