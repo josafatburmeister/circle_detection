@@ -138,7 +138,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
           }
         }
       }
-      std::cout << "circle_xy_indices " << circle_xy_indices << std::endl;
+      std::cout << "circle_xy_indices " << std::endl;
       ArrayX2<scalar_T> circle_xy = centered_xy(circle_xy_indices, Eigen::all).eval();
 
     //   std::cout << "step 7 " << idx << std::endl;
