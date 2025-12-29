@@ -130,9 +130,9 @@ ArrayX<scalar_T> circumferential_completeness_index(
       circumferential_completeness_indices(idx) = 0.0;
     } else {
       std::vector<int64_t> circle_xy_indices = {};
-        std::cout << "step 6.4 " << idx << std::endl;
-      if (max_dist_copy < 0) {
-        std::cout << "max dist < 0" << std::endl;
+      std::cout << "step 6.4 " << idx << std::endl;
+      // if (max_dist_copy < 0) {
+        // std::cout << "max dist < 0" << std::endl;
         // for (int64_t i = 0; i < radii.rows(); ++i) {
           // std::cout << "circle " << circle << std::endl;
           // if (radii(i) >= 0.7 * circle(2) && radii(i) <= 1.3 * circle(2)) {
@@ -140,14 +140,14 @@ ArrayX<scalar_T> circumferential_completeness_index(
           //   circle_xy_indices.push_back(i);
           // }
         // }
-      } else {
-        std::cout << "max dist > 0" << std::endl;
-        for (int64_t i = 0; i < radii.rows(); ++i) {
+      // } else {
+        // std::cout << "max dist > 0" << std::endl;
+        // for (int64_t i = 0; i < radii.rows(); ++i) {
           // if (std::abs(radii(i) - circle(2)) <= max_dist_copy) {
           //   circle_xy_indices.push_back(i);
           // }
-        }
-      }
+        // }
+      // }
     //   std::cout << "circle_xy_indices " << std::endl;
     //   ArrayX2<scalar_T> circle_xy = centered_xy(circle_xy_indices, Eigen::all).eval();
 
