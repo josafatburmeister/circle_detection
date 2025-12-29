@@ -77,8 +77,8 @@ ArrayX<scalar_T> circumferential_completeness_index(
 
   std::cout << "num_workers" << num_workers << std::endl;
 
-  // const ArrayX2<scalar_T> xy_copy = xy.eval();
-  // std::cout << "xy copy " << std::endl;
+  const ArrayX2<scalar_T> xy_copy = xy.eval();
+  std::cout << "xy copy " << std::endl;
   const ArrayX3<scalar_T> circles_copy = circles.eval();
   const ArrayXl batch_lengths_xy_copy = batch_lengths_xy.eval();
   std::cout << "batch_lengths_xy_copy " << std::endl;
@@ -107,7 +107,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
 
     std::cout << "indexer " << std::endl;
 
-    auto current_xy = xy(indexer, Eigen::all);
+    auto current_xy = xy_copy(indexer, Eigen::all);
 
     std::cout << "step 6.1 " << idx << std::endl;
     std::cout << "circle({0, 1} " << circle({0, 1}) << std::endl;
