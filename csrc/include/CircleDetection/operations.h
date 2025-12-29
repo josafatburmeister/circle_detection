@@ -79,6 +79,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
 
   // const ArrayX2<scalar_T> xy_copy = xy.eval();
   // std::cout << "xy copy " << std::endl;
+  cost ArrayX3<scalar_T> circles_copy = circles.eval();
   const ArrayXl batch_lengths_xy_copy = batch_lengths_xy.eval();
   std::cout << "batch_lengths_xy_copy " << std::endl;
   const ArrayXl batch_lengths_circles_copy = batch_lengths_circles.eval();
@@ -94,7 +95,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
     std::cout << "batch_lengths_xy " << batch_lengths_xy_copy << std::endl;
     std::cout << "batch_lengths_xy(batch_idx) " << batch_lengths_xy_copy(0) << std::endl;
     std::cout << "batch_idx" << batch_idx << std::endl;
-    Eigen::RowVector3<scalar_T> circle = circles(idx, Eigen::all);
+    Eigen::RowVector3<scalar_T> circle = circles_copy(idx, Eigen::all);
     std::cout << "step 5 " << idx << std::endl;
     std::cout << "circle " << circle << std::endl;
     std::cout << "batch_idx " << batch_idx << std::endl;
