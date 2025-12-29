@@ -72,7 +72,7 @@ jobs:
         uses: pypa/cibuildwheel@v2.21.3
         env:
           CIBW_FREE_THREADED_SUPPORT: True
-          CIBW_TEST_COMMAND: python {package}/test/operations/test_circumferential_completeness_index.py # pytest {package}/test
+          CIBW_TEST_COMMAND: python -u -X faulthandler {package}/test/operations/test_circumferential_completeness_index.py # pytest {package}/test
           CIBW_TEST_REQUIRES: pytest
           # CIBW_CONFIG_SETTINGS_WINDOWS : cmake.args=-DSKBUILD_CMAKE_BUILD_TYPE=Debug, -DSKBUILD_CMAKE_CXX_FLAGS_RELEASE=
           CIBW_SKIP: "{cp39-win_arm64,cp310-win_arm64,cp312-win_arm64,cp313-win_arm64,cp313t-win_arm64}"
