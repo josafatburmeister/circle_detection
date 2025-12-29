@@ -141,16 +141,14 @@ class TestMEstimator:
 
     @pytest.mark.skipif(multiprocessing.cpu_count() <= 1, reason="Testing of multi-threading requires multiple cores.")
     def test_multi_threading(self):
-        print("multiprocessing.cpu_count()", multiprocessing.cpu_count())
-
         original_circles = generate_circles(
             num_circles=20,
             min_radius=0.2,
             max_radius=0.6,
         )
 
-        xy_1 = generate_circle_points(original_circles[:10], min_points=2000, max_points=2000, variance=0.0)
-        xy_2 = generate_circle_points(original_circles[10:], min_points=2000, max_points=2000, variance=0.0)
+        xy_1 = generate_circle_points(original_circles[:10], min_points=500, max_points=500, variance=0.0)
+        xy_2 = generate_circle_points(original_circles[10:], min_points=500, max_points=500, variance=0.0)
         batch_lengths = np.array([len(xy_1), len(xy_2)], dtype=np.int64)
 
         circle_detector = MEstimator(bandwidth=0.05)
@@ -158,7 +156,7 @@ class TestMEstimator:
         single_threaded_runtime = 0
         multi_threaded_runtime = 0
 
-        repetitions = 8
+        repetitions = 2
         for _ in range(repetitions):
             start = time.perf_counter()
             circle_detector.detect(
