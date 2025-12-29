@@ -162,9 +162,9 @@ ArrayX<scalar_T> circumferential_completeness_index(
       angles = angles + PI;
 
       // guard against rounding putting exactly 2pi into the last bin
-      angles = angles.unaryExpr([PI](scalar_T a) {
-        return (a >= 2.0 * PI) ? (a - 2.0 * PI) : a;
-      });
+      // angles = angles.unaryExpr([PI](scalar_T a) {
+      //   return (a >= 2.0 * PI) ? (a - 2.0 * PI) : a;
+      // });
 
       std::cout << "angles " << angles << std::endl;
 
