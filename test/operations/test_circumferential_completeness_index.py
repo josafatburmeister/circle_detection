@@ -11,7 +11,10 @@ from circle_detection.operations import circumferential_completeness_index, filt
 
 import sys
 
-sys.path.insert(0, '.')
+import pathlib
+
+
+sys.path.insert(0, str(pathlib.Path(__file__).parent.parent.parent.resolve()))
 
 from test.utils import generate_circles, generate_circle_points  # pylint: disable=wrong-import-order
 
