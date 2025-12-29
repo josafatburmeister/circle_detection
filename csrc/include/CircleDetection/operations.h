@@ -152,7 +152,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
     //   std::set<int64_t> filled_sections(sections.data(), sections.data() + sections.size());
 
     //   circumferential_completeness_indices(idx) = filled_sections.size() / static_cast<scalar_T>(num_regions);
-    // }
+    }
   }
   std::cout << "step 4" << std::endl;
 
