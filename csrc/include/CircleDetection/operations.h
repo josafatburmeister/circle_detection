@@ -86,6 +86,9 @@ ArrayX<scalar_T> circumferential_completeness_index(
   const ArrayXl batch_lengths_circles_copy = batch_lengths_circles.eval();
   std::cout << "batch_lengths_circles_copy " << std::endl;
 
+  scalar_t max_dist_copy = max_dist;
+  int64_t num_regions_copy = num_regions;
+
   #pragma omp parallel for default(shared) num_threads(num_workers)
   for (int64_t idx = 0; idx < circles_copy.rows(); ++idx) {
     circumferential_completeness_indices(idx) = 0.0;
@@ -125,7 +128,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
     } else {
       std::vector<int64_t> circle_xy_indices = {};
         std::cout << "step 6.4 " << idx << std::endl;
-      if (max_dist < 0) {
+      if (max_dist_copy < 0) {
         std::cout << "max dist < 0" << std::endl;
         for (int64_t i = 0; i < radii.rows(); ++i) {
           std::cout << "circle " << circle << std::endl;
@@ -137,7 +140,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
       } else {
         std::cout << "max dist > 0" << std::endl;
         for (int64_t i = 0; i < radii.rows(); ++i) {
-          if (std::abs(radii(i) - circle(2)) <= max_dist) {
+          if (std::abs(radii(i) - circle(2)) <= max_dist_copy) {
             circle_xy_indices.push_back(i);
           }
         }
@@ -145,20 +148,20 @@ ArrayX<scalar_T> circumferential_completeness_index(
       std::cout << "circle_xy_indices " << std::endl;
       ArrayX2<scalar_T> circle_xy = centered_xy(circle_xy_indices, Eigen::all).eval();
 
-    //   std::cout << "step 7 " << idx << std::endl;
+      std::cout << "step 7 " << idx << std::endl;
 
-    //   ArrayX<scalar_T> angles =
-    //       circle_xy(Eigen::all, 1).binaryExpr(circle_xy(Eigen::all, 0), [](scalar_T y, scalar_T x) {
-    //         return std::atan2(y, x);
-    //       });
+      ArrayX<scalar_T> angles =
+          circle_xy(Eigen::all, 1).binaryExpr(circle_xy(Eigen::all, 0), [](scalar_T y, scalar_T x) {
+            return std::atan2(y, x);
+          });
 
-    //   ArrayXl sections =
-    //       (angles / angular_step_size).floor().unaryExpr([](scalar_T x) { return static_cast<int64_t>(x); });
-    //   sections = sections.unaryExpr([num_regions](const int64_t x) { return x % num_regions; });
+      ArrayXl sections =
+          (angles / angular_step_size).floor().unaryExpr([](scalar_T x) { return static_cast<int64_t>(x); });
+      sections = sections.unaryExpr([num_regions_copy](const int64_t x) { return x % num_regions_copy; });
 
-    //   std::set<int64_t> filled_sections(sections.data(), sections.data() + sections.size());
+      std::set<int64_t> filled_sections(sections.data(), sections.data() + sections.size());
 
-    //   circumferential_completeness_indices(idx) = filled_sections.size() / static_cast<scalar_T>(num_regions);
+      circumferential_completeness_indices(idx) = filled_sections.size() / static_cast<scalar_T>(num_regions_copy);
     }
   }
   std::cout << "step 4" << std::endl;
