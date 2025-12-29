@@ -86,8 +86,8 @@ class TestRansac:
                 np.concatenate((xy_1, xy_2)),
                 batch_lengths=batch_lengths,
                 num_workers=1,
-                break_max_radius=0.2,
-                break_min_radius=1.5,
+                break_min_radius=0.2,
+                break_max_radius=1.5,
             )
             single_threaded_runtime += time.perf_counter() - start
             start = time.perf_counter()
