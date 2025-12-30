@@ -70,9 +70,11 @@ class TestRansac:
             max_radius=1.5,
         )
 
-        xy_1 = generate_circle_points(original_circles[:20], min_points=4000, max_points=4000, variance=0.0)
-        xy_2 = generate_circle_points(original_circles[20:], min_points=4000, max_points=4000, variance=0.0)
-        batch_lengths = np.array([len(xy_1), len(xy_2)], dtype=np.int64)
+        xy_1 = generate_circle_points(original_circles[:10], min_points=4000, max_points=4000, variance=0.0)
+        xy_2 = generate_circle_points(original_circles[10:20], min_points=4000, max_points=4000, variance=0.0)
+        xy_3 = generate_circle_points(original_circles[20:30], min_points=4000, max_points=4000, variance=0.0)
+        xy_4 = generate_circle_points(original_circles[30:], min_points=4000, max_points=4000, variance=0.0)
+        batch_lengths = np.array([len(xy_1), len(xy_2), len(xy_3), len(xy_4)], dtype=np.int64)
 
         circle_detector = Ransac(bandwidth=0.05, iterations=4000)
 
@@ -83,7 +85,7 @@ class TestRansac:
         for _ in range(repetitions):
             start = time.perf_counter()
             circle_detector.detect(
-                np.concatenate((xy_1, xy_2)),
+                np.concatenate((xy_1, xy_2, xy_3, xy_4)),
                 batch_lengths=batch_lengths,
                 num_workers=1,
                 break_min_radius=0.2,
@@ -92,7 +94,7 @@ class TestRansac:
             single_threaded_runtime += time.perf_counter() - start
             start = time.perf_counter()
             circle_detector.detect(
-                np.concatenate((xy_1, xy_2)),
+                np.concatenate((xy_1, xy_2, xy_3, xy_4)),
                 batch_lengths=batch_lengths,
                 num_workers=-1,
             )

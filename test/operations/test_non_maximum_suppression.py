@@ -22,7 +22,10 @@ class TestNonMaximumSuppression:
         batch_lengths = np.array([3], dtype=np.int64)
 
         filtered_circles, filtered_fitting_scores, filtered_batch_lengths, selected_indices = non_maximum_suppression(
-            circles, fitting_scores, batch_lengths if pass_batch_lengths else None
+            circles,
+            fitting_scores,
+            batch_lengths if pass_batch_lengths else None,
+            num_workers=-1,
         )
 
         assert filtered_circles.dtype == scalar_dtype

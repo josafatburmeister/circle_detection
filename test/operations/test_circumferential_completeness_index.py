@@ -46,7 +46,7 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
         expected_circumferential_completness_indices = np.array([1, 0.5], dtype=scalar_dtype)
 
         circumferential_completeness_indices = circumferential_completeness_index(
-            circles, xy, num_regions, max_dist, batch_lengths_circles, batch_lengths_xy
+            circles, xy, num_regions, max_dist, batch_lengths_circles, batch_lengths_xy, num_workers=-1
         )
 
         assert circumferential_completeness_indices.dtype == scalar_dtype
@@ -65,6 +65,7 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
             max_dist=max_dist,
             batch_lengths_circles=batch_lengths_circles,
             batch_lengths_xy=batch_lengths_xy,
+            num_workers=-1,
         )
 
         assert filtered_circles.dtype == scalar_dtype
