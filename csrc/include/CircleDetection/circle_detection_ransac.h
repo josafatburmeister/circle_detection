@@ -114,7 +114,7 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_ransac(
   ArrayX3<scalar_T> circles = ArrayX3<scalar_T>::Constant(num_circles, 3, -1);
   ArrayXb diverged = ArrayXb::Constant(num_circles, true);
   ArrayX<scalar_T> fitting_scores = ArrayX<scalar_T>::Constant(num_circles, -1);
-  std::vector<std::mt19937> random_generators(num_batches);
+  std::vector<std::mt19937> random_generators;
 
   if (seed == -1) {
     std::random_device random_device;
@@ -137,81 +137,77 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_ransac(
     xy_per_batch[batch_idx] = xy(Eigen::seqN(batch_starts(batch_idx), batch_lengths(batch_idx)), Eigen::all);
   }
 
-#pragma omp parallel num_threads(num_workers)
-#pragma omp single
-  for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
+#pragma omp parallel for num_threads(num_workers)
+  for (int64_t task_idx = 0; task_idx < num_batches * iterations; ++task_idx) {
+    int64_t batch_idx = task_idx / iterations;
+    int64_t i = task_idx % iterations;
+
     if (batch_lengths(batch_idx) < 3) {
       continue;
     }
-    for (int64_t i = 0; i < iterations; ++i) {
-#pragma omp task
-      {
-        int samples_to_draw = std::min(num_samples, static_cast<int>(xy_per_batch[batch_idx].rows()));
+    int samples_to_draw = std::min(num_samples, static_cast<int>(xy_per_batch[batch_idx].rows()));
 
-        std::vector<int64_t> indices(xy_per_batch[batch_idx].rows());
-        std::iota(indices.begin(), indices.end(), 0);
+    std::vector<int64_t> indices(xy_per_batch[batch_idx].rows());
+    std::iota(indices.begin(), indices.end(), 0);
 
-        std::shuffle(indices.begin(), indices.end(), random_generators[batch_idx]);
+    std::shuffle(indices.begin(), indices.end(), random_generators[batch_idx]);
 
-        std::vector<int64_t> hypothetical_inliers_indices(indices.begin(), indices.begin() + samples_to_draw);
+    std::vector<int64_t> hypothetical_inliers_indices(indices.begin(), indices.begin() + samples_to_draw);
 
-        ArrayX2<scalar_T> hypothetical_inliers_xy = xy_per_batch[batch_idx](hypothetical_inliers_indices, Eigen::all);
+    ArrayX2<scalar_T> hypothetical_inliers_xy = xy_per_batch[batch_idx](hypothetical_inliers_indices, Eigen::all);
 
-        Vector3<scalar_T> circle = fit_circle_lsq<scalar_T>(hypothetical_inliers_xy);
+    Vector3<scalar_T> circle = fit_circle_lsq<scalar_T>(hypothetical_inliers_xy);
 
-        for (int step = 0; step < 1;
-             ++step) {  // we use a for loop with a single iteration so that we can use break to exit early
-          if (circle(2) == -1 || circle(0) < break_min_x(batch_idx) || circle(0) > break_max_x(batch_idx) ||
-              circle(1) < break_min_y(batch_idx) || circle(1) > break_max_y(batch_idx) ||
-              circle(2) < break_min_radius(batch_idx) || circle(2) > break_max_radius(batch_idx)) {
-            break;
-          }
-          // dists to circle center
-          ArrayX<scalar_T> dists_to_circle =
-              (xy_per_batch[batch_idx].rowwise() - circle({0, 1}).transpose().array()).rowwise().norm();
-          // dists to circle outline
-          dists_to_circle = (dists_to_circle - circle(2)).abs();
+    for (int step = 0; step < 1;
+         ++step) {  // we use a for loop with a single iteration so that we can use break to exit early
+      if (circle(2) == -1 || circle(0) < break_min_x(batch_idx) || circle(0) > break_max_x(batch_idx) ||
+          circle(1) < break_min_y(batch_idx) || circle(1) > break_max_y(batch_idx) ||
+          circle(2) < break_min_radius(batch_idx) || circle(2) > break_max_radius(batch_idx)) {
+        break;
+      }
+      // dists to circle center
+      ArrayX<scalar_T> dists_to_circle =
+          (xy_per_batch[batch_idx].rowwise() - circle({0, 1}).transpose().array()).rowwise().norm();
+      // dists to circle outline
+      dists_to_circle = (dists_to_circle - circle(2)).abs();
 
-          std::vector<int64_t> consensus_indices;
-          for (int64_t j = 0; j < xy_per_batch[batch_idx].rows(); ++j) {
-            if (dists_to_circle(j) <= bandwidth) {
-              consensus_indices.push_back(j);
-            }
-          }
-          if (consensus_indices.size() < min_concensus_points) {
-            break;
-          }
-          ArrayX2<scalar_T> consensus_xy = xy_per_batch[batch_idx](consensus_indices, Eigen::all);
-
-          // fit circle to all consensus points
-          circle = fit_circle_lsq<scalar_T>(consensus_xy);
-
-          if (circle(2) == -1 || circle(0) < break_min_x(batch_idx) || circle(0) > break_max_x(batch_idx) ||
-              circle(1) < break_min_y(batch_idx) || circle(1) > break_max_y(batch_idx) ||
-              circle(2) < break_min_radius(batch_idx) || circle(2) > break_max_radius(batch_idx)) {
-            break;
-          }
-
-          // dists to circle center
-          dists_to_circle = (xy_per_batch[batch_idx].rowwise() - circle({0, 1}).transpose().array()).rowwise().norm();
-          // dists to circle outline
-          dists_to_circle = dists_to_circle - circle(2);
-
-          scalar_T fitting_score =
-              1 / bandwidth *
-              (dists_to_circle / bandwidth).unaryExpr(&CircleDetection::score_fn_scalar<scalar_T>).sum();
-
-          if (fitting_score < min_fitting_score) {
-            break;
-          }
-
-          int64_t flat_idx = batch_idx * iterations + i;
-
-          diverged(flat_idx) = false;
-          circles(flat_idx, Eigen::all) = circle;
-          fitting_scores(flat_idx) = fitting_score;
+      std::vector<int64_t> consensus_indices;
+      for (int64_t j = 0; j < xy_per_batch[batch_idx].rows(); ++j) {
+        if (dists_to_circle(j) <= bandwidth) {
+          consensus_indices.push_back(j);
         }
       }
+      if (consensus_indices.size() < min_concensus_points) {
+        break;
+      }
+      ArrayX2<scalar_T> consensus_xy = xy_per_batch[batch_idx](consensus_indices, Eigen::all);
+
+      // fit circle to all consensus points
+      circle = fit_circle_lsq<scalar_T>(consensus_xy);
+
+      if (circle(2) == -1 || circle(0) < break_min_x(batch_idx) || circle(0) > break_max_x(batch_idx) ||
+          circle(1) < break_min_y(batch_idx) || circle(1) > break_max_y(batch_idx) ||
+          circle(2) < break_min_radius(batch_idx) || circle(2) > break_max_radius(batch_idx)) {
+        break;
+      }
+
+      // dists to circle center
+      dists_to_circle = (xy_per_batch[batch_idx].rowwise() - circle({0, 1}).transpose().array()).rowwise().norm();
+      // dists to circle outline
+      dists_to_circle = dists_to_circle - circle(2);
+
+      scalar_T fitting_score =
+          1 / bandwidth * (dists_to_circle / bandwidth).unaryExpr(&CircleDetection::score_fn_scalar<scalar_T>).sum();
+
+      if (fitting_score < min_fitting_score) {
+        break;
+      }
+
+      int64_t flat_idx = batch_idx * iterations + i;
+
+      diverged(flat_idx) = false;
+      circles(flat_idx, Eigen::all) = circle;
+      fitting_scores(flat_idx) = fitting_score;
     }
   }
 

@@ -62,21 +62,26 @@ class TestRansac:
 
     @pytest.mark.skipif(multiprocessing.cpu_count() <= 1, reason="Testing of multi-threading requires multiple cores.")
     def test_multi_threading(self):
-        print("multiprocessing.cpu_count()", multiprocessing.cpu_count())
+        batch_size = 10
 
-        original_circles = generate_circles(
-            num_circles=40,
-            min_radius=0.2,
-            max_radius=1.5,
-        )
+        xy = []
+        batch_lengths = []
 
-        xy_1 = generate_circle_points(original_circles[:10], min_points=4000, max_points=4000, variance=0.0)
-        xy_2 = generate_circle_points(original_circles[10:20], min_points=4000, max_points=4000, variance=0.0)
-        xy_3 = generate_circle_points(original_circles[20:30], min_points=4000, max_points=4000, variance=0.0)
-        xy_4 = generate_circle_points(original_circles[30:], min_points=4000, max_points=4000, variance=0.0)
-        batch_lengths = np.array([len(xy_1), len(xy_2), len(xy_3), len(xy_4)], dtype=np.int64)
+        for _ in range(batch_size):
+            original_circles = generate_circles(
+                num_circles=5,
+                min_radius=0.2,
+                max_radius=1.5,
+            )
 
-        circle_detector = Ransac(bandwidth=0.05, iterations=4000)
+            current_xy = generate_circle_points(original_circles, min_points=100, max_points=4000, variance=0.0)
+            xy.append(current_xy)
+            batch_lengths.append(len(current_xy))
+
+        batch_lengths_np = np.array(batch_lengths, dtype=np.int64)
+        xy_np = np.concatenate(xy)
+
+        circle_detector = Ransac(bandwidth=0.05)
 
         single_threaded_runtime = 0
         multi_threaded_runtime = 0
@@ -85,8 +90,8 @@ class TestRansac:
         for _ in range(repetitions):
             start = time.perf_counter()
             circle_detector.detect(
-                np.concatenate((xy_1, xy_2, xy_3, xy_4)),
-                batch_lengths=batch_lengths,
+                xy_np,
+                batch_lengths=batch_lengths_np,
                 num_workers=1,
                 break_min_radius=0.2,
                 break_max_radius=1.5,
@@ -94,8 +99,8 @@ class TestRansac:
             single_threaded_runtime += time.perf_counter() - start
             start = time.perf_counter()
             circle_detector.detect(
-                np.concatenate((xy_1, xy_2, xy_3, xy_4)),
-                batch_lengths=batch_lengths,
+                xy_np,
+                batch_lengths=batch_lengths_np,
                 num_workers=-1,
             )
             multi_threaded_runtime += time.perf_counter() - start
