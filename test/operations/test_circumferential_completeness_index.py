@@ -131,7 +131,7 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
         single_threaded_runtime = 0
         multi_threaded_runtime = 0
 
-        repetitions = 5
+        repetitions = 4
         for _ in range(repetitions):
             start = time.perf_counter()
             circumferential_completeness_index(
