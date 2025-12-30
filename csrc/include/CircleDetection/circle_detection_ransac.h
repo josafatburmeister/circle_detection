@@ -159,7 +159,7 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_ransac(
     Vector3<scalar_T> circle = fit_circle_lsq<scalar_T>(hypothetical_inliers_xy);
 
     for (int step = 0; step < 1;
-          ++step) {  // we use a for loop with a single iteration so that we can use break to exit early
+         ++step) {  // we use a for loop with a single iteration so that we can use break to exit early
       if (circle(2) == -1 || circle(0) < break_min_x(batch_idx) || circle(0) > break_max_x(batch_idx) ||
           circle(1) < break_min_y(batch_idx) || circle(1) > break_max_y(batch_idx) ||
           circle(2) < break_min_radius(batch_idx) || circle(2) > break_max_radius(batch_idx)) {
@@ -197,8 +197,7 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_ransac(
       dists_to_circle = dists_to_circle - circle(2);
 
       scalar_T fitting_score =
-          1 / bandwidth *
-          (dists_to_circle / bandwidth).unaryExpr(&CircleDetection::score_fn_scalar<scalar_T>).sum();
+          1 / bandwidth * (dists_to_circle / bandwidth).unaryExpr(&CircleDetection::score_fn_scalar<scalar_T>).sum();
 
       if (fitting_score < min_fitting_score) {
         break;
@@ -209,7 +208,6 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_ransac(
       diverged(flat_idx) = false;
       circles(flat_idx, Eigen::all) = circle;
       fitting_scores(flat_idx) = fitting_score;
-
     }
   }
 
