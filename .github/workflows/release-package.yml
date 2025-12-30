@@ -57,6 +57,11 @@ jobs:
       #   shell: pwsh
       #   run: |
       #     cl /Bv
+      - name: Install LLVM on Windows ARM
+        if: ${{ startsWith(matrix.os, 'windows-11-arm') }}
+        run: |
+          choco install -y llvm ninja
+          clang --version
       - name: Build MacOS wheels
         if: ${{ startsWith(matrix.os, 'macos') }}
         uses: pypa/cibuildwheel@v2.21.3
@@ -78,9 +83,6 @@ jobs:
           CIBW_SKIP: "{cp39-win_arm64,cp310-win_arm64,cp312-win_arm64,cp313-win_arm64,cp313t-win_arm64}"
           SKBUILD_CMAKE_BUILD_TYPE: "Debug"
           OMP_THREADS: 1
-          CIBW_BEFORE_ALL_WINDOWS: >
-            choco install -y llvm ninja;
-            clang --version
           CIBW_ENVIRONMENT_WINDOWS: >
             CC=clang-cl
             CXX=clang-cl
