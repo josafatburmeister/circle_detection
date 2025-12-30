@@ -110,7 +110,6 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
 
     @pytest.mark.skipif(multiprocessing.cpu_count() <= 1, reason="Testing of multi-threading requires multiple cores.")
     def test_multi_threading(self):
-        print("multiprocessing.cpu_count()", multiprocessing.cpu_count())
 
         batch_size = 1000
         circles = np.array([[[0, 0, 1], [5, 0, 1]]], dtype=np.float64)
