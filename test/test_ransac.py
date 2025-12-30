@@ -74,7 +74,7 @@ class TestRansac:
                 max_radius=1.5,
             )
 
-            current_xy = generate_circle_points(original_circles, min_points=100, max_points=1000, variance=0.0)
+            current_xy = generate_circle_points(original_circles, min_points=100, max_points=2000, variance=0.0)
             xy.append(current_xy)
             batch_lengths.append(len(current_xy))
 
@@ -95,6 +95,7 @@ class TestRansac:
                 num_workers=1,
                 break_min_radius=0.01,
                 break_max_radius=2.0,
+                seed=42,
             )
             single_threaded_runtime += time.perf_counter() - start
             start = time.perf_counter()
@@ -104,10 +105,72 @@ class TestRansac:
                 num_workers=-1,
                 break_min_radius=0.01,
                 break_max_radius=2.0,
+                seed=42,
             )
             multi_threaded_runtime += time.perf_counter() - start
 
         assert multi_threaded_runtime < single_threaded_runtime
+
+    @pytest.mark.parametrize("num_workers", [1, -1])
+    def test_reproducibility(self, num_workers: int):  # pylint: disable=too-many-locals
+        seed = 42
+        batch_size = 2
+
+        xy = []
+        batch_lengths = []
+
+        for _ in range(batch_size):
+            original_circles = generate_circles(
+                num_circles=5,
+                min_radius=0.2,
+                max_radius=1.5,
+            )
+
+            current_xy = generate_circle_points(original_circles, min_points=100, max_points=1000, variance=0.0)
+            xy.append(current_xy)
+            batch_lengths.append(len(current_xy))
+
+        batch_lengths_np = np.array(batch_lengths, dtype=np.int64)
+        xy_np = np.concatenate(xy)
+
+        ransac = Ransac(bandwidth=0.01)
+        ransac.detect(
+            xy_np,
+            batch_lengths=batch_lengths_np,
+            num_workers=num_workers,
+            seed=seed,
+        )
+
+        circles_1 = ransac.circles
+        fitting_scores_1 = ransac.fitting_scores
+
+        ransac = Ransac(bandwidth=0.01)
+        ransac.detect(
+            xy_np,
+            batch_lengths=batch_lengths_np,
+            num_workers=num_workers,
+            seed=seed,
+        )
+
+        circles_2 = ransac.circles
+        fitting_scores_2 = ransac.fitting_scores
+
+        np.testing.assert_array_equal(circles_1, circles_2)
+        np.testing.assert_array_equal(fitting_scores_1, fitting_scores_2)
+
+        ransac = Ransac(bandwidth=0.01)
+        ransac.detect(
+            xy_np,
+            batch_lengths=batch_lengths_np,
+            num_workers=2,
+            seed=seed,
+        )
+
+        circles_3 = ransac.circles
+        fitting_scores_3 = ransac.fitting_scores
+
+        np.testing.assert_array_equal(circles_1, circles_3)
+        np.testing.assert_array_equal(fitting_scores_1, fitting_scores_3)
 
     def test_return_values_pass_by_reference(self):
         original_circles = np.array([[0, 0, 0.5]])
