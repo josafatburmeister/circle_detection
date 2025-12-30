@@ -70,9 +70,9 @@ ArrayX<scalar_T> circumferential_completeness_index(
     int64_t batch_idx = batch_indices(idx);
     Eigen::RowVector3<scalar_T> circle = circles(idx, Eigen::all);
 
-    auto current_xy = xy(Eigen::seqN(batch_starts_xy(batch_idx), batch_lengths_xy(batch_idx)), Eigen::all);
+    ArrayX2<scalar_T> circle_xy = xy(Eigen::seqN(batch_starts_xy(batch_idx), batch_lengths_xy(batch_idx)), Eigen::all);
 
-    ArrayX2<scalar_T> centered_xy = current_xy.rowwise() - circle({0, 1}).array();
+    ArrayX2<scalar_T> centered_xy = circle_xy.rowwise() - circle({0, 1}).array();
     ArrayX<scalar_T> radii = centered_xy.rowwise().norm();
 
     if (centered_xy.rows() == 0) {
@@ -101,7 +101,6 @@ ArrayX<scalar_T> circumferential_completeness_index(
 
       ArrayXl sections =
           (angles / angular_step_size).floor().unaryExpr([](scalar_T x) { return static_cast<int64_t>(x); });
-
       sections = sections.unaryExpr([num_regions](const int64_t x) { return x % num_regions; });
 
       std::set<int64_t> filled_sections(sections.data(), sections.data() + sections.size());
