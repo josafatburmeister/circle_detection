@@ -55,8 +55,6 @@ ArrayX<scalar_T> circumferential_completeness_index(
   int64_t num_batches = batch_lengths_circles.size();
   ArrayX<scalar_T> circumferential_completeness_indices(circles.rows());
 
-  scalar_T angular_step_size = 2 * PI / static_cast<scalar_T>(num_regions);
-
   ArrayXl batch_starts_circles(num_batches);
   ArrayXl batch_starts_xy(num_batches);
   ArrayXl batch_indices(circles.rows());
@@ -88,9 +86,11 @@ ArrayX<scalar_T> circumferential_completeness_index(
 
   scalar_T max_dist_copy = max_dist;
   // int64_t num_regions_copy = num_regions;
+  int64_t num_regions_copy = 4;
 
-  // std::cout << "num_regions_copy " << num_regions_copy << std::endl;
+  std::cout << "num_regions_copy " << num_regions_copy << std::endl;
   std::cout << "max_dist_copy " << max_dist_copy << std::endl;
+  scalar_T angular_step_size = 2 * PI / static_cast<scalar_T>(num_regions_copy);
 
   #pragma omp parallel for shared(angular_step_size, batch_indices, xy_copy, circles_copy, batch_starts_xy, batch_lengths_xy_copy, batch_lengths_circles_copy, max_dist_copy) num_threads(num_workers)
   for (int64_t idx = 0; idx < circles_copy.rows(); ++idx) {
@@ -173,7 +173,7 @@ ArrayX<scalar_T> circumferential_completeness_index(
 
       // std::cout << "sections" << sections << std::endl;
 
-      // int64_t num_regions_copy = 4;
+      // 
 
       // sections = sections.unaryExpr([num_regions_copy](const int64_t x) { return x % num_regions_copy; });
       // std::cout << "sections 2" << sections << std::endl;
