@@ -64,14 +64,14 @@ jobs:
           $dir = Get-ChildItem -Directory | Where-Object { $_.Name -like "clang+llvm-*" } | Select-Object -First 1
           echo "$($dir.FullName)\bin" | Out-File -Append -FilePath $env:GITHUB_PATH
           clang --version
-      - name: Build wheels
-        if: ${{ !startsWith(matrix.os, 'macos') }}
+      - name: Build wheels (all platforms except for Windows ARM)
+        if: ${{ !matrix.os != 'windows-11-arm' }}
         uses: pypa/cibuildwheel@v2.21.3
         env:
           CIBW_FREE_THREADED_SUPPORT: True
           CIBW_TEST_COMMAND: pytest {package}/test
           CIBW_TEST_REQUIRES: pytest
-          CIBW_SKIP: "{cp39-win_arm64,cp310-win_arm64,pp39-macosx_arm64}"
+          CIBW_SKIP: "{pp39-macosx_arm64}"
           CIBW_CONFIG_SETTINGS_MACOS: >
             cmake.args=-DOPENMP_ROOT=${{ github.workspace }}/llvm-project/openmp/install
           CIBW_CONFIG_SETTINGS_WINDOWS_ARM64: cmake.args=-DOPENMP_ROOT="C:/Program Files/LLVM"
@@ -80,6 +80,22 @@ jobs:
           CIBW_BEFORE_BUILD_WINDOWS_ARM64: "pip install delvewheel"
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS_ARM64: "delvewheel repair -w {dest_dir} {wheel}"
           CIBW_ENVIRONMENT_WINDOWS_ARM64: >
+            CC=clang-cl
+            CXX=clang-cl
+            CMAKE_GENERATOR=Ninja
+            CMAKE_ARGS=-DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl
+      - name: Build wheels (Windows ARM)
+        if: ${{ !matrix.os == 'windows-11-arm' }}
+        uses: pypa/cibuildwheel@v2.21.3
+        env:
+          CIBW_FREE_THREADED_SUPPORT: True
+          CIBW_TEST_COMMAND: pytest {package}/test
+          CIBW_TEST_REQUIRES: pytest
+          CIBW_SKIP: "{cp39-win_arm64,cp310-win_arm64}"
+          CIBW_CONFIG_SETTINGS_WINDOWS: cmake.args=-DOPENMP_ROOT="C:/Program Files/LLVM"
+          CIBW_BEFORE_BUILD_WINDOWS: "pip install delvewheel"
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
+          CIBW_ENVIRONMENT_WINDOWS: >
             CC=clang-cl
             CXX=clang-cl
             CMAKE_GENERATOR=Ninja

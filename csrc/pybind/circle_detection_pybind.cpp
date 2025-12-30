@@ -36,8 +36,7 @@ PYBIND11_MODULE(_circle_detection_cpp, m) {
     the documentation of the Python wrapper class :code:`circle_detection.Ransac`.
   )pbdoc");
 
-  m.def(
-      "fit_circle_lsq", &CircleDetection::fit_circle_lsq<float>, pybind11::return_value_policy::take_ownership, "");
+  m.def("fit_circle_lsq", &CircleDetection::fit_circle_lsq<float>, pybind11::return_value_policy::take_ownership, "");
 
   m.def(
       "fit_circle_lsq", &CircleDetection::fit_circle_lsq<double>, pybind11::return_value_policy::take_ownership,
