@@ -114,7 +114,6 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_ransac(
   ArrayX3<scalar_T> circles = ArrayX3<scalar_T>::Constant(num_circles, 3, -1);
   ArrayXb diverged = ArrayXb::Constant(num_circles, true);
   ArrayX<scalar_T> fitting_scores = ArrayX<scalar_T>::Constant(num_circles, -1);
-  std::vector<std::mt19937> random_generators(num_batches);
 
   if (seed == -1) {
     std::random_device random_device;
@@ -127,7 +126,6 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_ransac(
   for (int64_t batch_idx = 0; batch_idx < num_batches; ++batch_idx) {
     batch_starts(batch_idx) = batch_start;
     batch_start += batch_lengths(batch_idx);
-    random_generators.push_back(std::mt19937(seed));
   }
 
   std::vector<ArrayX2<scalar_T>> xy_per_batch(num_batches);
@@ -151,7 +149,9 @@ std::tuple<ArrayX3<scalar_T>, ArrayX<scalar_T>, ArrayXl> detect_circles_ransac(
         std::vector<int64_t> indices(xy_per_batch[batch_idx].rows());
         std::iota(indices.begin(), indices.end(), 0);
 
-        std::shuffle(indices.begin(), indices.end(), random_generators[batch_idx]);
+        std::mt19937 random_generator = std::mt19937(seed + batch_idx * iterations + i);
+
+        std::shuffle(indices.begin(), indices.end(), random_generator);
 
         std::vector<int64_t> hypothetical_inliers_indices(indices.begin(), indices.begin() + samples_to_draw);
 
