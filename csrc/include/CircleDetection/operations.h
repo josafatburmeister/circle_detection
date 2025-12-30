@@ -176,10 +176,13 @@ ArrayX<scalar_T> circumferential_completeness_index(
       int64_t num_regions_copy = 4;
 
       sections = sections.unaryExpr([num_regions_copy](const int64_t x) { return x % num_regions_copy; });
+      std::cout << "sections 2" << sections << std::endl;
 
       std::set<int64_t> filled_sections(sections.data(), sections.data() + sections.size());
+      
+      std::cout << "filled_sections" << filled_sections.size() << std::endl;
 
-      circumferential_completeness_indices(idx) = filled_sections.size() / static_cast<scalar_T>(num_regions_copy);
+      // circumferential_completeness_indices(idx) = filled_sections.size() / static_cast<scalar_T>(num_regions_copy);
     }
   }
   std::cout << "step 4" << std::endl;
