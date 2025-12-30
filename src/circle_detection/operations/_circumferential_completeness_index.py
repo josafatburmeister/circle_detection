@@ -5,13 +5,9 @@ __all__ = [
     "filter_circumferential_completeness_index",
 ]
 
-import os
-
 from typing import Optional, Tuple
 
 import numpy as np
-
-print("try import")
 
 from circle_detection.operations._operations_cpp import (  # type: ignore[import-not-found] # pylint: disable=import-error, no-name-in-module
     circumferential_completeness_index as circumferential_completeness_index_cpp,
@@ -19,11 +15,6 @@ from circle_detection.operations._operations_cpp import (  # type: ignore[import
 )
 from circle_detection.type_aliases import FloatArray, LongArray
 
-print("first import")
-
-import circle_detection.operations._operations_cpp as my_module
-
-print("module file:", os.path.abspath(my_module.__file__))
 
 def circumferential_completeness_index(
     circles: FloatArray,

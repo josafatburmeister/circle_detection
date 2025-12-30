@@ -23,14 +23,13 @@ scalar_T stddev(RefArrayX2<scalar_T> x) {
 
 template <typename scalar_T>
 ArrayX<scalar_T> circumferential_completeness_index(
-    ArrayX3<scalar_T> circles,
-    ArrayX2<scalar_T> xy,
-    ArrayXl batch_lengths_circles,
-    ArrayXl batch_lengths_xy,
+    RefArrayX3<scalar_T> circles,
+    RefArrayX2<scalar_T> xy,
+    RefArrayXl batch_lengths_circles,
+    RefArrayXl batch_lengths_xy,
     int64_t num_regions,
     scalar_T max_dist,
     int num_workers = 1) {
-  std::cout << "step 1" << std::endl;
   if (batch_lengths_circles.rows() != batch_lengths_xy.rows()) {
     throw std::invalid_argument("The length of batch_lengths_circles and batch_lengths_xy must be equal.");
   }
@@ -47,10 +46,10 @@ ArrayX<scalar_T> circumferential_completeness_index(
 
   constexpr scalar_T PI = 3.14159265358979311600;
 
-  scalar_T angular_step_size = 2 * PI / static_cast<scalar_T>(num_regions);
-
   int64_t num_batches = batch_lengths_circles.size();
   ArrayX<scalar_T> circumferential_completeness_indices(circles.rows());
+
+  scalar_T angular_step_size = 2 * PI / static_cast<scalar_T>(num_regions);
 
   ArrayXl batch_starts_circles(num_batches);
   ArrayXl batch_starts_xy(num_batches);
@@ -66,13 +65,12 @@ ArrayX<scalar_T> circumferential_completeness_index(
     batch_start_xy += batch_lengths_xy(batch_idx);
   }
 
-  #pragma omp parallel for default(shared) num_threads(num_workers)
+#pragma omp parallel for default(shared) num_threads(num_workers)
   for (int64_t idx = 0; idx < circles.rows(); ++idx) {
-    circumferential_completeness_indices(idx) = 0.0;
     int64_t batch_idx = batch_indices(idx);
-    Eigen::RowVector3<scalar_T> circle = circles(idx, Eigen::all).eval();
+    Eigen::RowVector3<scalar_T> circle = circles(idx, Eigen::all);
 
-    auto current_xy = xy(Eigen::seqN(batch_starts_xy(batch_idx), batch_lengths_xy(batch_idx)), Eigen::all).eval();
+    auto current_xy = xy(Eigen::seqN(batch_starts_xy(batch_idx), batch_lengths_xy(batch_idx)), Eigen::all);
 
     ArrayX2<scalar_T> centered_xy = current_xy.rowwise() - circle({0, 1}).array();
     ArrayX<scalar_T> radii = centered_xy.rowwise().norm();
@@ -94,23 +92,15 @@ ArrayX<scalar_T> circumferential_completeness_index(
           }
         }
       }
-      ArrayX2<scalar_T> circle_xy = centered_xy(circle_xy_indices, Eigen::all).eval();
+      ArrayX2<scalar_T> circle_xy = centered_xy(circle_xy_indices, Eigen::all);
 
       ArrayX<scalar_T> angles =
           circle_xy(Eigen::all, 1).binaryExpr(circle_xy(Eigen::all, 0), [](scalar_T y, scalar_T x) {
             return std::atan2(y, x);
           });
 
-      // shift from [-pi, pi] to [0, 2pi)
-      angles = angles + PI;
-
-      // guard against rounding putting exactly 2pi into the last bin
-      // angles = angles.unaryExpr([PI](scalar_T a) {
-      //   return (a >= 2.0 * PI) ? (a - 2.0 * PI) : a;
-      // });
-
       ArrayXl sections =
-           (angles / angular_step_size).floor().unaryExpr([](scalar_T x) { return static_cast<int64_t>(x); });
+          (angles / angular_step_size).floor().unaryExpr([](scalar_T x) { return static_cast<int64_t>(x); });
 
       sections = sections.unaryExpr([num_regions](const int64_t x) { return x % num_regions; });
 

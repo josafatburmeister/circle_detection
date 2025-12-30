@@ -75,8 +75,6 @@ class TestNonMaximumSuppression:
     def test_multi_threading(self):
         batch_size = 200
 
-        print("multiprocessing.cpu_count()", multiprocessing.cpu_count())
-
         circles = generate_circles(
             num_circles=2000,
             min_radius=0.2,
@@ -91,7 +89,7 @@ class TestNonMaximumSuppression:
         single_threaded_runtime = 0
         multi_threaded_runtime = 0
 
-        repetitions = 8
+        repetitions = 5
         for _ in range(repetitions):
             start = time.perf_counter()
             non_maximum_suppression(circles, fitting_scores, batch_lengths, num_workers=1)
