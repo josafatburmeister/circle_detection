@@ -45,12 +45,9 @@ ArrayX<scalar_T> circumferential_completeness_index(
     num_workers = omp_get_max_threads();
   }
 
-  Eigen::setNbThreads(1);
-  Eigen::initParallel();
-
   constexpr scalar_T PI = 3.14159265358979311600;
 
-  std::cout << "step 2" << std::endl;
+  scalar_T angular_step_size = 2 * PI / static_cast<scalar_T>(num_regions);
 
   int64_t num_batches = batch_lengths_circles.size();
   ArrayX<scalar_T> circumferential_completeness_indices(circles.rows());
@@ -68,90 +65,36 @@ ArrayX<scalar_T> circumferential_completeness_index(
     batch_start_circles += batch_lengths_circles(batch_idx);
     batch_start_xy += batch_lengths_xy(batch_idx);
   }
-  std::cout << "step 3" << std::endl;
-  std::cout << "batch_lengths_xy " << batch_lengths_xy << std::endl;
-  std::cout << "batch_starts_xy " << batch_starts_xy << std::endl;
-  std::cout << "batch_indices" << batch_indices << std::endl;
-
-  std::cout << "num_workers" << num_workers << std::endl;
-
-  const ArrayX2<scalar_T> xy_copy = xy.eval();
-  std::cout << "xy copy " << xy_copy << std::endl;
-  const ArrayX3<scalar_T> circles_copy = circles.eval();
-  std::cout << "circles_copy " << circles_copy << std::endl;
-  const ArrayXl batch_lengths_xy_copy = batch_lengths_xy.eval();
-  std::cout << "batch_lengths_xy_copy " << std::endl;
-  const ArrayXl batch_lengths_circles_copy = batch_lengths_circles.eval();
-  std::cout << "batch_lengths_circles_copy " << std::endl;
-
-  scalar_T max_dist_copy = max_dist;
-  // int64_t num_regions_copy = num_regions;
-  int64_t num_regions_copy = 4;
-
-  std::cout << "num_regions_copy " << num_regions_copy << std::endl;
-  std::cout << "max_dist_copy " << max_dist_copy << std::endl;
-  scalar_T angular_step_size = 2 * PI / static_cast<scalar_T>(num_regions_copy);
 
   #pragma omp parallel for default(shared) num_threads(num_workers)
   for (int64_t idx = 0; idx < circles.rows(); ++idx) {
     circumferential_completeness_indices(idx) = 0.0;
-    std::cout << "step 4 " << idx << std::endl;
     int64_t batch_idx = batch_indices(idx);
-    auto test = batch_lengths_xy(0);
-    std::cout << "test" << std::endl;
-    std::cout << test << std::endl;
-    std::cout << "batch_lengths_xy " << batch_lengths_xy << std::endl;
-    std::cout << "batch_lengths_xy(batch_idx) " << batch_lengths_xy(0) << std::endl;
-    std::cout << "batch_idx" << batch_idx << std::endl;
     Eigen::RowVector3<scalar_T> circle = circles(idx, Eigen::all).eval();
-    std::cout << "step 5 " << idx << std::endl;
-    std::cout << "circle " << circle << std::endl;
-    std::cout << "batch_idx " << batch_idx << std::endl;
-    std::cout << "batch_starts_xy(batch_idx) " << batch_starts_xy(batch_idx) << std::endl;
-    std::cout << "test" << std::endl;
-    std::cout << "batch_idx " << batch_idx << std::endl;
 
-    auto indexer = Eigen::seqN(batch_starts_xy(batch_idx), batch_lengths_xy(batch_idx));
-
-    std::cout << "indexer " << std::endl;
-
-    auto current_xy = xy(indexer, Eigen::all).eval();
-
-    std::cout << "step 6.1 " << idx << std::endl;
-    std::cout << "circle({0, 1} " << circle({0, 1}) << std::endl;
+    auto current_xy = xy(Eigen::seqN(batch_starts_xy(batch_idx), batch_lengths_xy(batch_idx)), Eigen::all).eval();
 
     ArrayX2<scalar_T> centered_xy = current_xy.rowwise() - circle({0, 1}).array();
-    std::cout << "step 6.2 " << idx << std::endl;
     ArrayX<scalar_T> radii = centered_xy.rowwise().norm();
-    std::cout << "step 6.3 " << idx << std::endl;
-    std::cout << "radii " << radii << std::endl;
 
     if (centered_xy.rows() == 0) {
       circumferential_completeness_indices(idx) = 0.0;
     } else {
-      std::vector<int64_t> circle_xy_indices = {};
-      std::cout << "step 6.4 " << idx << std::endl;
+      std::vector<int64_t> circle_xy_indices;
       if (max_dist < 0) {
-        std::cout << "max dist < 0" << std::endl;
         for (int64_t i = 0; i < radii.rows(); ++i) {
-          std::cout << "circle " << circle << std::endl;
           if (radii(i) >= 0.7 * circle(2) && radii(i) <= 1.3 * circle(2)) {
-            std::cout << "push back" << std::endl;
             circle_xy_indices.push_back(i);
           }
         }
       } else {
-        std::cout << "max dist > 0" << std::endl;
         for (int64_t i = 0; i < radii.rows(); ++i) {
           if (std::abs(radii(i) - circle(2)) <= max_dist) {
             circle_xy_indices.push_back(i);
           }
         }
       }
-      std::cout << "circle_xy_indices " << std::endl;
       ArrayX2<scalar_T> circle_xy = centered_xy(circle_xy_indices, Eigen::all).eval();
-
-      std::cout << "step 7 " << idx << std::endl;
 
       ArrayX<scalar_T> angles =
           circle_xy(Eigen::all, 1).binaryExpr(circle_xy(Eigen::all, 0), [](scalar_T y, scalar_T x) {
@@ -166,26 +109,16 @@ ArrayX<scalar_T> circumferential_completeness_index(
       //   return (a >= 2.0 * PI) ? (a - 2.0 * PI) : a;
       // });
 
-      std::cout << "angles " << angles << std::endl;
-
       ArrayXl sections =
            (angles / angular_step_size).floor().unaryExpr([](scalar_T x) { return static_cast<int64_t>(x); });
 
-      std::cout << "sections" << sections << std::endl;
-
-      
-
       sections = sections.unaryExpr([num_regions](const int64_t x) { return x % num_regions; });
-      std::cout << "sections 2" << sections << std::endl;
 
       std::set<int64_t> filled_sections(sections.data(), sections.data() + sections.size());
-      
-      std::cout << "filled_sections" << filled_sections.size() << std::endl;
 
       circumferential_completeness_indices(idx) = filled_sections.size() / static_cast<scalar_T>(num_regions);
     }
   }
-  std::cout << "step 4" << std::endl;
 
   return circumferential_completeness_indices;
 }
