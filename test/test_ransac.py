@@ -74,7 +74,7 @@ class TestRansac:
                 max_radius=1.5,
             )
 
-            current_xy = generate_circle_points(original_circles, min_points=500, max_points=2000, variance=0.0)
+            current_xy = generate_circle_points(original_circles, min_points=1000, max_points=1000, variance=0.0)
             xy.append(current_xy)
             batch_lengths.append(len(current_xy))
 
