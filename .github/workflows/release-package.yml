@@ -80,12 +80,13 @@ jobs:
           OMP_THREADS: 1
           CIBW_BEFORE_ALL_WINDOWS: >
             choco install -y llvm ninja
+            clang --version
           CIBW_ENVIRONMENT_WINDOWS: >
             CC=clang-cl
             CXX=clang-cl
             CMAKE_GENERATOR=Ninja
             CMAKE_ARGS=-DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl
-          CIBW_CONFIG_SETTINGS: cmake.args=-DOPENMP_ROOT="C:/Program Files/LLVM" -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_TARGET=arm64-pc-windows-msvc -DCMAKE_CXX_COMPILER_TARGET=arm64-pc-windows-msvc
+          CIBW_CONFIG_SETTINGS: cmake.args='-DOPENMP_ROOT="C:/Program Files/LLVM" -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_TARGET=arm64-pc-windows-msvc -DCMAKE_CXX_COMPILER_TARGET=arm64-pc-windows-msvc'
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
