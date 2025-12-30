@@ -59,8 +59,15 @@ jobs:
       #     cl /Bv
       - name: Install LLVM on Windows ARM
         if: ${{ startsWith(matrix.os, 'windows-11-arm') }}
+        shell: pwsh
         run: |
-          choco install -y llvm ninja
+          $ver = "21.1.8"
+          $asset = "clang+llvm-$ver-aarch64-pc-windows-msvc.tar.xz"
+          $url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-$ver/$asset"
+          Invoke-WebRequest $url -OutFile $asset
+          tar -xf $asset
+          $dir = Get-ChildItem -Directory | Where-Object { $_.Name -like "clang+llvm-*" } | Select-Object -First 1
+          echo "$($dir.FullName)\bin" | Out-File -Append -FilePath $env:GITHUB_PATH
           clang --version
       - name: Build MacOS wheels
         if: ${{ startsWith(matrix.os, 'macos') }}
@@ -88,7 +95,7 @@ jobs:
             CXX=clang-cl
             CMAKE_GENERATOR=Ninja
             CMAKE_ARGS=-DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl
-          CIBW_CONFIG_SETTINGS: cmake.args='-DOPENMP_ROOT="C:/Program Files/LLVM" -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_TARGET=arm64-pc-windows-msvc -DCMAKE_CXX_COMPILER_TARGET=arm64-pc-windows-msvc'
+          CIBW_CONFIG_SETTINGS: cmake.args=-DOPENMP_ROOT="C:/Program Files/LLVM" #  -DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl -DCMAKE_C_COMPILER_TARGET=arm64-pc-windows-msvc -DCMAKE_CXX_COMPILER_TARGET=arm64-pc-windows-msvc'
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
