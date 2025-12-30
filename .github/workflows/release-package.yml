@@ -65,7 +65,7 @@ jobs:
           echo "$($dir.FullName)\bin" | Out-File -Append -FilePath $env:GITHUB_PATH
           clang --version
       - name: Build wheels (all platforms except for Windows ARM)
-        if: ${{ !matrix.os != 'windows-11-arm' }}
+        if: ${{ matrix.os != 'windows-11-arm' }}
         uses: pypa/cibuildwheel@v2.21.3
         env:
           CIBW_FREE_THREADED_SUPPORT: True
@@ -85,7 +85,7 @@ jobs:
             CMAKE_GENERATOR=Ninja
             CMAKE_ARGS=-DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl
       - name: Build wheels (Windows ARM)
-        if: ${{ !matrix.os == 'windows-11-arm' }}
+        if: ${{ matrix.os == 'windows-11-arm' }}
         uses: pypa/cibuildwheel@v2.21.3
         env:
           CIBW_FREE_THREADED_SUPPORT: True
