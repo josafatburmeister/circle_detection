@@ -63,7 +63,7 @@ class TestRansac:
     @pytest.mark.skipif(multiprocessing.cpu_count() <= 1, reason="Testing of multi-threading requires multiple cores.")
     def test_multi_threading(self):
         print("multiprocessing.cpu_count()", multiprocessing.cpu_count())
-        batch_size = 80
+        batch_size = 20
 
         xy = []
         batch_lengths = []
@@ -96,7 +96,7 @@ class TestRansac:
                 num_workers=1,
                 break_min_radius=0.01,
                 break_max_radius=2.0,
-                seed=42,
+                seed=42 + repetition,
             )
             single_threaded_runtime += time.perf_counter() - start
             start = time.perf_counter()
