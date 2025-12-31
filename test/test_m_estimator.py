@@ -184,11 +184,6 @@ class TestMEstimator:
 
         assert multi_threaded_runtime < single_threaded_runtime
 
-        print("single_threaded_runtime", single_threaded_runtime)
-        print("multi_threaded_runtime", multi_threaded_runtime)
-
-        assert False
-
     def test_return_values_pass_by_reference(self):
         original_circles = np.array([[0, 0, 0.5]])
         xy = generate_circle_points(original_circles, min_points=100, max_points=100)
