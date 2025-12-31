@@ -24,6 +24,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
 ]
 keywords = ["circle fitting", "data science"]
 requires-python = ">=3.9"
@@ -71,4 +72,5 @@ changelog_file = "CHANGELOG.md"
 build_command = "python -m build"
 
 [tool.scikit-build]
+build.verbose = true
 cmake.args = ["-DBUILD_LIB=OFF"]

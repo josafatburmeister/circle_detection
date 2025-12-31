@@ -15,31 +15,11 @@ concurrency:
 
 jobs:
   build-wheels:
-    name: Build wheels for ${{ matrix.buildplat[0] }} and ${{ matrix.python }}
-    runs-on: ${{ matrix.buildplat[0] }}
+    name: Build wheels for ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        buildplat:
-          - [ubuntu-latest, manylinux_x86_64]
-          - [ubuntu-latest, musllinux_x86_64]
-
-          # the macos-14 runner uses an Apple silicon chip, while the macos-13 runner uses an Intel chip
-          - [macos-14, macosx_arm64]
-          - [macos-15, macosx_arm64]
-          - [macos-15-intel, macosx_x86_64]
-
-          - [windows-latest, win_amd64]
-          - [windows-latest, win32]
-        python: ["cp39", "cp310", "cp311", "cp312", "cp313", "cp313t", "pp39", "pp310"]
-        exclude:
-          - buildplat: [ubuntu-latest, musllinux_x86_64]
-            python: "pp39"
-          - buildplat: [ubuntu-latest, musllinux_x86_64]
-            python: "pp310"
-          - buildplat: [windows-latest, win32]
-            python: "pp39"
-          - buildplat: [windows-latest, win32]
-            python: "pp310"
+        os: [ubuntu-latest, ubuntu-24.04-arm, windows-latest, windows-11-arm, macos-latest, macos-15-intel]
     steps:
       # Note: we need to checkout the repository at the workflow sha in case during the workflow
       # the branch was updated. To keep PSR working with the configured release branches,
@@ -57,32 +37,80 @@ jobs:
           python -m pip install --upgrade pip
           pip install build wheel python-semantic-release
           semantic-release version --no-commit --skip-build --no-vcs-release --no-tag
-      - name: Set up Homebrew
-        if: ${{ startsWith(matrix.buildplat[0], 'macos') }}
-        uses: Homebrew/actions/setup-homebrew@master
-      - name: Install OpenMP
-        if: ${{ startsWith(matrix.buildplat[0], 'macos') }}
-        run: brew install libomp
-      - name: Setup macOS >=14
-        if: ${{ startsWith(matrix.buildplat[0], 'macos') }}
-        shell: bash
+      - name: Install OpenMP on MacOS
+        if: ${{ startsWith(matrix.os, 'macos') }}
         run: |
-          # macosx_arm64 and macosx_x86_64 with accelerate
-          # only target Sonoma onwards
-          CIBW="MACOSX_DEPLOYMENT_TARGET=14.0 RUNNER_OS=macOS"
-          echo "CIBW_ENVIRONMENT_MACOS=$CIBW" >> "$GITHUB_ENV"
+          git clone --depth 1 https://github.com/llvm/llvm-project.git
+          cd llvm-project/openmp
+
+          cmake -S . -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/llvm-project/openmp/install" \
+            -DCMAKE_OSX_ARCHITECTURES="arm64;x86_64" \
+            -DCMAKE_OSX_DEPLOYMENT_TARGET=10.9 \
+            -DLIBOMP_ENABLE_SHARED=ON
+
+          cmake --build build -j
+          cmake --install build
+      - name: Install LLVM on Windows ARM
+        if: ${{ matrix.os == 'windows-11-arm' }}
+        shell: pwsh
+        run: |
+          $ver = "21.1.8"
+          $asset = "clang+llvm-$ver-aarch64-pc-windows-msvc.tar.xz"
+          $asseturl = "https://github.com/llvm/llvm-project/releases/download/llvmorg-$ver/$asset"
+          $keysurl = "https://releases.llvm.org/release-keys.asc"
+
+          Invoke-WebRequest $asseturl -OutFile $asset
+          Invoke-WebRequest "$asseturl.sig" -OutFile "$asset.sig"
+
+          Invoke-WebRequest $keysurl -OutFile "release-keys.asc"
+          gpg --import release-keys.asc
+          gpg --verify "$asset.sig" "$asset"
+
+          tar -xf $asset
+          $dir = Get-ChildItem -Directory | Where-Object { $_.Name -like "clang+llvm-*" } | Select-Object -First 1
+          echo "$($dir.FullName)\bin" | Out-File -Append -FilePath $env:GITHUB_PATH
+          clang --version
+      - name: Build wheels (all platforms except for Windows ARM)
+        if: ${{ matrix.os != 'windows-11-arm' }}
+        uses: pypa/cibuildwheel@v3.3.0
         env:
-          MAC_OS_VERSION: ${{ matrix.buildplat[0] }}
-      - name: Build wheels
-        uses: pypa/cibuildwheel@v2.21.3
-        env:
-          CIBW_FREE_THREADED_SUPPORT: True
-          CIBW_BUILD: ${{ matrix.python }}-${{ matrix.buildplat[1] }}
+          CIBW_ENABLE: cpython-freethreading
           CIBW_TEST_COMMAND: pytest {package}/test
           CIBW_TEST_REQUIRES: pytest
+          CIBW_SKIP: "pp39-macosx_arm64 pp39-manylinux_i686"
+          CIBW_CONFIG_SETTINGS_MACOS: >
+            cmake.args=-DOPENMP_ROOT=${{ github.workspace }}/llvm-project/openmp/install
+          CIBW_CONFIG_SETTINGS_WINDOWS_ARM64: cmake.args=-DOPENMP_ROOT="C:/Program Files/LLVM"
+          CIBW_ENVIRONMENT_MACOS: >
+            DYLD_LIBRARY_PATH="${{ github.workspace }}/llvm-project/openmp/install/lib"
+          CIBW_BEFORE_BUILD_WINDOWS_ARM64: "pip install delvewheel"
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS_ARM64: "delvewheel repair -w {dest_dir} {wheel}"
+          CIBW_ENVIRONMENT_WINDOWS_ARM64: >
+            CC=clang-cl
+            CXX=clang-cl
+            CMAKE_GENERATOR=Ninja
+            CMAKE_ARGS=-DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl
+      - name: Build wheels (Windows ARM)
+        if: ${{ matrix.os == 'windows-11-arm' }}
+        uses: pypa/cibuildwheel@v3.3.0
+        env:
+          CIBW_ENABLE: cpython-freethreading
+          CIBW_TEST_COMMAND: pytest {package}/test
+          CIBW_TEST_REQUIRES: pytest
+          CIBW_SKIP: "cp39-win_arm64 cp310-win_arm64"
+          CIBW_CONFIG_SETTINGS_WINDOWS: cmake.args=-DOPENMP_ROOT="C:/Program Files/LLVM"
+          CIBW_BEFORE_BUILD_WINDOWS: "pip install delvewheel"
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
+          CIBW_ENVIRONMENT_WINDOWS: >
+            CC=clang-cl
+            CXX=clang-cl
+            CMAKE_GENERATOR=Ninja
+            CMAKE_ARGS=-DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl
       - uses: actions/upload-artifact@v4
         with:
-          name: cibw-wheels-${{ matrix.python }}-${{ matrix.buildplat[0] }}-${{ matrix.buildplat[1] }}
+          name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
           path: ./wheelhouse/*.whl
 
   build-sdist:

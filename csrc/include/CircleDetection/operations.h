@@ -68,11 +68,11 @@ ArrayX<scalar_T> circumferential_completeness_index(
 #pragma omp parallel for default(shared) num_threads(num_workers)
   for (int64_t idx = 0; idx < circles.rows(); ++idx) {
     int64_t batch_idx = batch_indices(idx);
-    ArrayX<scalar_T> circle = circles(idx, Eigen::all);
+    Eigen::RowVector3<scalar_T> circle = circles(idx, Eigen::all);
 
-    ArrayX2<scalar_T> centered_xy =
-        xy(Eigen::seqN(batch_starts_xy(batch_idx), batch_lengths_xy(batch_idx)), Eigen::all).rowwise() -
-        circle({0, 1}).transpose();
+    ArrayX2<scalar_T> circle_xy = xy(Eigen::seqN(batch_starts_xy(batch_idx), batch_lengths_xy(batch_idx)), Eigen::all);
+
+    ArrayX2<scalar_T> centered_xy = circle_xy.rowwise() - circle({0, 1}).array();
     ArrayX<scalar_T> radii = centered_xy.rowwise().norm();
 
     if (centered_xy.rows() == 0) {

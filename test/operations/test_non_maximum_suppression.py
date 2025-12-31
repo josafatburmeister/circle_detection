@@ -22,7 +22,10 @@ class TestNonMaximumSuppression:
         batch_lengths = np.array([3], dtype=np.int64)
 
         filtered_circles, filtered_fitting_scores, filtered_batch_lengths, selected_indices = non_maximum_suppression(
-            circles, fitting_scores, batch_lengths if pass_batch_lengths else None
+            circles,
+            fitting_scores,
+            batch_lengths if pass_batch_lengths else None,
+            num_workers=-1,
         )
 
         assert filtered_circles.dtype == scalar_dtype
@@ -73,10 +76,10 @@ class TestNonMaximumSuppression:
 
     @pytest.mark.skipif(multiprocessing.cpu_count() <= 1, reason="Testing of multi-threading requires multiple cores.")
     def test_multi_threading(self):
-        batch_size = 100
+        batch_size = 500
 
         circles = generate_circles(
-            num_circles=1000,
+            num_circles=2000,
             min_radius=0.2,
             max_radius=10.1,
         )

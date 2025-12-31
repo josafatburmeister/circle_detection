@@ -46,7 +46,7 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
         expected_circumferential_completness_indices = np.array([1, 2 / 3], dtype=scalar_dtype)
 
         circumferential_completeness_indices = circumferential_completeness_index(
-            circles, xy, num_regions, max_dist, batch_lengths_circles, batch_lengths_xy
+            circles, xy, num_regions, max_dist, batch_lengths_circles, batch_lengths_xy, num_workers=-1
         )
 
         assert circumferential_completeness_indices.dtype == scalar_dtype
@@ -65,6 +65,7 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
             max_dist=max_dist,
             batch_lengths_circles=batch_lengths_circles,
             batch_lengths_xy=batch_lengths_xy,
+            num_workers=-1,
         )
 
         assert filtered_circles.dtype == scalar_dtype
@@ -110,6 +111,7 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
 
     @pytest.mark.skipif(multiprocessing.cpu_count() <= 1, reason="Testing of multi-threading requires multiple cores.")
     def test_multi_threading(self):
+
         batch_size = 1000
         circles = np.array([[[0, 0, 1], [5, 0, 1]]], dtype=np.float64)
         circles = generate_circles(
@@ -117,7 +119,7 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
             min_radius=0.2,
             max_radius=0.6,
         )
-        xy = generate_circle_points(circles, min_points=1000, max_points=2000, add_noise_points=True, variance=0.01)
+        xy = generate_circle_points(circles, min_points=2000, max_points=2000, add_noise_points=True, variance=0.01)
 
         batch_lengths_xy = np.array([len(xy)] * batch_size, dtype=np.int64)
         batch_lengths_circles = np.array([len(circles)] * batch_size, dtype=np.int64)
@@ -130,7 +132,7 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
         single_threaded_runtime = 0
         multi_threaded_runtime = 0
 
-        repetitions = 5
+        repetitions = 4
         for _ in range(repetitions):
             start = time.perf_counter()
             circumferential_completeness_index(
