@@ -1,7 +1,6 @@
 """Tests for circle_detection.Ransac."""
 
 import multiprocessing
-import platform
 import time
 from typing import Any, Dict, Optional
 
