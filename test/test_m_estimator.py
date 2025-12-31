@@ -141,29 +141,43 @@ class TestMEstimator:
 
     @pytest.mark.skipif(multiprocessing.cpu_count() <= 1, reason="Testing of multi-threading requires multiple cores.")
     def test_multi_threading(self):
-        original_circles = np.array([[0, 0, 0.5], [0, 0, 0.52]])
-        xy_1 = generate_circle_points(original_circles[:1], min_points=100, max_points=100, variance=0.0)
-        xy_2 = generate_circle_points(original_circles[1:], min_points=100, max_points=100, variance=0.0)
-        batch_lengths = np.array([len(xy_1), len(xy_2)], dtype=np.int64)
+        batch_size = 3
+
+        xy = []
+        batch_lengths = []
+
+        for _ in range(batch_size):
+            original_circles = generate_circles(
+                num_circles=2,
+                min_radius=0.3,
+                max_radius=0.6,
+            )
+
+            current_xy = generate_circle_points(original_circles, min_points=50, max_points=100, variance=0.0)
+            xy.append(current_xy)
+            batch_lengths.append(len(current_xy))
+
+        batch_lengths_np = np.array(batch_lengths, dtype=np.int64)
+        xy_np = np.concatenate(xy)
 
         circle_detector = MEstimator(bandwidth=0.05)
 
         single_threaded_runtime = 0
         multi_threaded_runtime = 0
 
-        repetitions = 4
+        repetitions = 2
         for _ in range(repetitions):
             start = time.perf_counter()
             circle_detector.detect(
-                np.concatenate((xy_1, xy_2)),
-                batch_lengths=batch_lengths,
+                xy_np,
+                batch_lengths=batch_lengths_np,
                 num_workers=1,
             )
             single_threaded_runtime += time.perf_counter() - start
             start = time.perf_counter()
             circle_detector.detect(
-                np.concatenate((xy_1, xy_2)),
-                batch_lengths=batch_lengths,
+                xy_np,
+                batch_lengths=batch_lengths_np,
                 num_workers=-1,
             )
             multi_threaded_runtime += time.perf_counter() - start
