@@ -62,7 +62,7 @@ class TestRansac:
 
     @pytest.mark.skipif(multiprocessing.cpu_count() <= 1, reason="Testing of multi-threading requires multiple cores.")
     def test_multi_threading(self):
-        batch_size = 30
+        batch_size = 40
 
         xy = []
         batch_lengths = []
@@ -74,7 +74,7 @@ class TestRansac:
                 max_radius=1.5,
             )
 
-            current_xy = generate_circle_points(original_circles, min_points=100, max_points=2000, variance=0.0)
+            current_xy = generate_circle_points(original_circles, min_points=100, max_points=500, variance=0.0)
             xy.append(current_xy)
             batch_lengths.append(len(current_xy))
 
