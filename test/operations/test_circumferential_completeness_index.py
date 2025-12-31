@@ -28,8 +28,8 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
                 [np.sqrt(0.5), -np.sqrt(0.5)],
                 [-np.sqrt(0.5), np.sqrt(0.5)],
                 [-np.sqrt(0.5), -np.sqrt(0.5)],
-                [5, 1],
-                [5, -1],
+                [5 + np.sqrt(0.5), np.sqrt(0.5)],
+                [5 - np.sqrt(0.5), np.sqrt(0.5)],
             ],
             dtype=scalar_dtype,
         )
@@ -41,9 +41,9 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
             batch_lengths_circles = None
             batch_lengths_xy = None
 
-        num_regions = 4
+        num_regions = 3
 
-        expected_circumferential_completness_indices = np.array([1, 0.5], dtype=scalar_dtype)
+        expected_circumferential_completness_indices = np.array([1, 2 / 3], dtype=scalar_dtype)
 
         circumferential_completeness_indices = circumferential_completeness_index(
             circles, xy, num_regions, max_dist, batch_lengths_circles, batch_lengths_xy
@@ -60,7 +60,7 @@ class TestCircumferentialCompletenessIndex:  # pylint: disable=too-few-public-me
         filtered_circles, batch_lengths_circles, selected_indices = filter_circumferential_completeness_index(
             circles,
             xy,
-            min_circumferential_completeness_index=0.6,
+            min_circumferential_completeness_index=0.7,
             num_regions=num_regions,
             max_dist=max_dist,
             batch_lengths_circles=batch_lengths_circles,

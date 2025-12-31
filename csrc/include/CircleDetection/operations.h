@@ -99,6 +99,11 @@ ArrayX<scalar_T> circumferential_completeness_index(
             return std::atan2(y, x);
           });
 
+      // shift from [-pi, pi] to [0, 2pi)
+      angles = angles + PI;
+      // guard against putting exactly 2 pi into the last bin
+      angles = angles.unaryExpr([PI](scalar_T a) { return (a >= scalar_T(2.0) * PI) ? (a - scalar_T(2.0) * PI) : a; });
+
       ArrayXl sections =
           (angles / angular_step_size).floor().unaryExpr([](scalar_T x) { return static_cast<int64_t>(x); });
       sections = sections.unaryExpr([num_regions](const int64_t x) { return x % num_regions; });
