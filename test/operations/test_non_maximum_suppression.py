@@ -76,7 +76,7 @@ class TestNonMaximumSuppression:
 
     @pytest.mark.skipif(multiprocessing.cpu_count() <= 1, reason="Testing of multi-threading requires multiple cores.")
     def test_multi_threading(self):
-        batch_size = 200
+        batch_size = 500
 
         circles = generate_circles(
             num_circles=2000,
