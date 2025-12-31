@@ -68,7 +68,7 @@ jobs:
         if: ${{ matrix.os != 'windows-11-arm' }}
         uses: pypa/cibuildwheel@v3.3.0
         env:
-          CIBW_ENABLE=cpython-freethreading
+          CIBW_ENABLE: cpython-freethreading
           CIBW_TEST_COMMAND: pytest {package}/test
           CIBW_TEST_REQUIRES: pytest
           CIBW_SKIP: pp39-macosx_arm64
