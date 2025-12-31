@@ -61,8 +61,8 @@ jobs:
           $asseturl = "https://github.com/llvm/llvm-project/releases/download/llvmorg-$ver/$asset"
           $keysurl = "https://releases.llvm.org/release-keys.asc"
 
-          Invoke-WebRequest $url -OutFile $asseturl
-          Invoke-WebRequest "$url.sig" -OutFile "$asseturl.sig"
+          Invoke-WebRequest $asseturl -OutFile $asset
+          Invoke-WebRequest "$asseturl.sig" -OutFile "$asset.sig"
 
           Invoke-WebRequest $keysurl -OutFile "release-keys.asc"
           gpg --import release-keys.asc
