@@ -58,10 +58,13 @@ jobs:
         run: |
           $ver = "21.1.8"
           $asset = "clang+llvm-$ver-aarch64-pc-windows-msvc.tar.xz"
+          $asset-url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-$ver/$asset"
+          $keys-url = "https://releases.llvm.org/release-keys.asc"
 
-          gh release download $tag -R llvm/llvm-project -p "$asset" -p "$asset.sig"
+          Invoke-WebRequest $url -OutFile $asset-url
+          Invoke-WebRequest "$url.sig" -OutFile "$asset-url.sig"
 
-          Invoke-WebRequest "https://raw.githubusercontent.com/llvm/llvm-project/main/llvm/utils/release/keys/release-keys.asc" -OutFile "release-keys.asc"
+          Invoke-WebRequest $keys-url -OutFile "release-keys.asc"
           gpg --import release-keys.asc
           gpg --verify "$asset.sig" "$asset"
 
