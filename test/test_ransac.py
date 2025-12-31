@@ -70,7 +70,7 @@ class TestRansac:
 
         for _ in range(batch_size):
             original_circles = generate_circles(
-                num_circles=5,
+                num_circles=10,
                 min_radius=0.2,
                 max_radius=1.5,
             )
@@ -88,7 +88,7 @@ class TestRansac:
         multi_threaded_runtime = 0
 
         repetitions = 2
-        for _ in range(repetitions):
+        for repetition in range(repetitions):
             start = time.perf_counter()
             circle_detector.detect(
                 xy_np,
@@ -106,7 +106,7 @@ class TestRansac:
                 num_workers=-1,
                 break_min_radius=0.01,
                 break_max_radius=2.0,
-                seed=42,
+                seed=42 + repetition,
             )
             multi_threaded_runtime += time.perf_counter() - start
 
