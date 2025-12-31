@@ -58,13 +58,13 @@ jobs:
         run: |
           $ver = "21.1.8"
           $asset = "clang+llvm-$ver-aarch64-pc-windows-msvc.tar.xz"
-          $asset-url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-$ver/$asset"
-          $keys-url = "https://releases.llvm.org/release-keys.asc"
+          $asseturl = "https://github.com/llvm/llvm-project/releases/download/llvmorg-$ver/$asset"
+          $keysurl = "https://releases.llvm.org/release-keys.asc"
 
-          Invoke-WebRequest $url -OutFile $asset-url
-          Invoke-WebRequest "$url.sig" -OutFile "$asset-url.sig"
+          Invoke-WebRequest $url -OutFile $asseturl
+          Invoke-WebRequest "$url.sig" -OutFile "$asseturl.sig"
 
-          Invoke-WebRequest $keys-url -OutFile "release-keys.asc"
+          Invoke-WebRequest $keysurl -OutFile "release-keys.asc"
           gpg --import release-keys.asc
           gpg --verify "$asset.sig" "$asset"
 
@@ -96,7 +96,7 @@ jobs:
         if: ${{ matrix.os == 'windows-11-arm' }}
         uses: pypa/cibuildwheel@v3.3.0
         env:
-          CIBW_FREE_THREADED_SUPPORT: True
+          CIBW_ENABLE: cpython-freethreading
           CIBW_TEST_COMMAND: pytest {package}/test
           CIBW_TEST_REQUIRES: pytest
           CIBW_SKIP: "{cp39-win_arm64,cp310-win_arm64}"
