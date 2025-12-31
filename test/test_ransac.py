@@ -81,7 +81,7 @@ class TestRansac:
         batch_lengths_np = np.array(batch_lengths, dtype=np.int64)
         xy_np = np.concatenate(xy)
 
-        circle_detector = Ransac(bandwidth=0.05)
+        circle_detector = Ransac(bandwidth=0.05, iterations=2000)
 
         single_threaded_runtime = 0
         multi_threaded_runtime = 0
