@@ -58,8 +58,13 @@ jobs:
         run: |
           $ver = "21.1.8"
           $asset = "clang+llvm-$ver-aarch64-pc-windows-msvc.tar.xz"
-          $url = "https://github.com/llvm/llvm-project/releases/download/llvmorg-$ver/$asset"
-          Invoke-WebRequest $url -OutFile $asset
+
+          gh release download $tag -R llvm/llvm-project -p "$asset" -p "$asset.sig"
+
+          Invoke-WebRequest "https://raw.githubusercontent.com/llvm/llvm-project/main/llvm/utils/release/keys/release-keys.asc" -OutFile "release-keys.asc"
+          gpg --import release-keys.asc
+          gpg --verify "$asset.sig" "$asset"
+
           tar -xf $asset
           $dir = Get-ChildItem -Directory | Where-Object { $_.Name -like "clang+llvm-*" } | Select-Object -First 1
           echo "$($dir.FullName)\bin" | Out-File -Append -FilePath $env:GITHUB_PATH
@@ -86,7 +91,7 @@ jobs:
             CMAKE_ARGS=-DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl
       - name: Build wheels (Windows ARM)
         if: ${{ matrix.os == 'windows-11-arm' }}
-        uses: pypa/cibuildwheel@v2.21.3
+        uses: pypa/cibuildwheel@v3.3.0
         env:
           CIBW_FREE_THREADED_SUPPORT: True
           CIBW_TEST_COMMAND: pytest {package}/test
