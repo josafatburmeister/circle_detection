@@ -52,62 +52,19 @@ jobs:
 
           cmake --build build -j
           cmake --install build
-      - name: Install LLVM on Windows ARM
-        if: ${{ matrix.os == 'windows-11-arm' }}
-        shell: pwsh
-        run: |
-          $ver = "21.1.8"
-          $asset = "clang+llvm-$ver-aarch64-pc-windows-msvc.tar.xz"
-          $asseturl = "https://github.com/llvm/llvm-project/releases/download/llvmorg-$ver/$asset"
-          $keysurl = "https://releases.llvm.org/release-keys.asc"
-
-          Invoke-WebRequest $asseturl -OutFile $asset
-          Invoke-WebRequest "$asseturl.sig" -OutFile "$asset.sig"
-
-          Invoke-WebRequest $keysurl -OutFile "release-keys.asc"
-          gpg --import release-keys.asc
-          gpg --verify "$asset.sig" "$asset"
-
-          tar -xf $asset
-          $dir = Get-ChildItem -Directory | Where-Object { $_.Name -like "clang+llvm-*" } | Select-Object -First 1
-          echo "$($dir.FullName)\bin" | Out-File -Append -FilePath $env:GITHUB_PATH
-          clang --version
-      - name: Build wheels (all platforms except for Windows ARM)
-        if: ${{ matrix.os != 'windows-11-arm' }}
+      - name: Build wheels
         uses: pypa/cibuildwheel@v3.3.0
         env:
           CIBW_ENABLE: cpython-freethreading
           CIBW_TEST_COMMAND: pytest {package}/test
           CIBW_TEST_REQUIRES: pytest
-          CIBW_SKIP: "pp39-macosx_arm64 pp39-manylinux_i686"
+          CIBW_SKIP: "pp39-macosx_arm64 pp39-manylinux_i686 cp39-win_arm64 cp310-win_arm64"
           CIBW_CONFIG_SETTINGS_MACOS: >
             cmake.args=-DOPENMP_ROOT=${{ github.workspace }}/llvm-project/openmp/install
-          CIBW_CONFIG_SETTINGS_WINDOWS_ARM64: cmake.args=-DOPENMP_ROOT="C:/Program Files/LLVM"
           CIBW_ENVIRONMENT_MACOS: >
             DYLD_LIBRARY_PATH="${{ github.workspace }}/llvm-project/openmp/install/lib"
-          CIBW_BEFORE_BUILD_WINDOWS_ARM64: "pip install delvewheel"
-          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS_ARM64: "delvewheel repair -w {dest_dir} {wheel}"
-          CIBW_ENVIRONMENT_WINDOWS_ARM64: >
-            CC=clang-cl
-            CXX=clang-cl
-            CMAKE_GENERATOR=Ninja
-            CMAKE_ARGS=-DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl
-      - name: Build wheels (Windows ARM)
-        if: ${{ matrix.os == 'windows-11-arm' }}
-        uses: pypa/cibuildwheel@v3.3.0
-        env:
-          CIBW_ENABLE: cpython-freethreading
-          CIBW_TEST_COMMAND: pytest {package}/test
-          CIBW_TEST_REQUIRES: pytest
-          CIBW_SKIP: "cp39-win_arm64 cp310-win_arm64"
-          CIBW_CONFIG_SETTINGS_WINDOWS: cmake.args=-DOPENMP_ROOT="C:/Program Files/LLVM"
           CIBW_BEFORE_BUILD_WINDOWS: "pip install delvewheel"
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: "delvewheel repair -w {dest_dir} {wheel}"
-          CIBW_ENVIRONMENT_WINDOWS: >
-            CC=clang-cl
-            CXX=clang-cl
-            CMAKE_GENERATOR=Ninja
-            CMAKE_ARGS=-DCMAKE_C_COMPILER=clang-cl -DCMAKE_CXX_COMPILER=clang-cl
       - uses: actions/upload-artifact@v4
         with:
           name: cibw-wheels-${{ matrix.os }}-${{ strategy.job-index }}
